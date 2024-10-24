@@ -160,26 +160,6 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
-    def "ignores Develocity URL and allowUntrustedServer when Develocity plugin is not applied by the init script"() {
-        given:
-        declareDevelocityPluginApplication(testGradleVersion.gradleVersion)
-
-        when:
-        def config = testConfig().withServer(URI.create('https://develocity-server.invalid'))
-        def result = run(testGradleVersion, config)
-
-        then:
-        outputMissesDevelocityPluginApplicationViaInitScript(result)
-        outputMissesCcudPluginApplicationViaInitScript(result)
-
-        and:
-        outputContainsBuildScanUrl(result)
-
-        where:
-        testGradleVersion << ALL_VERSIONS
-    }
-
-    @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
     def "configures Develocity URL and allowUntrustedServer when Develocity plugin is applied by the init script"() {
         when:
         def config = testConfig().withServer(mockScansServer.address)
@@ -205,6 +185,29 @@ class TestDevelocityInjection extends BaseInitScriptTest {
 
         when:
         def config = testConfig().withServer(mockScansServer.address, true)
+        def result = run(testGradleVersion, config)
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputEnforcesDevelocityUrl(result, mockScansServer.address.toString(), true)
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        where:
+        testGradleVersion << ALL_VERSIONS
+    }
+
+    @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
+    def "enforces Develocity URL and allowUntrustedServer in project if plugin is not applied by the init script"() {
+        given:
+        declareDevelocityPluginApplication(testGradleVersion.gradleVersion, URI.create('https://develocity-server.invalid'))
+
+        when:
+        def config = testConfig().withServer(mockScansServer.address, true).withDevelocityPluginVersion(null)
         def result = run(testGradleVersion, config)
 
         then:
@@ -408,6 +411,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     private BuildResult run(TestGradleVersion testGradleVersion, DvInjectionTestConfig config, List<String> args = ["help"]) {
+        println(config.envVars)
         return run(args, testGradleVersion.gradleVersion, config.envVars)
     }
 
@@ -427,7 +431,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         String pluginRepositoryUsername = null
         String pluginRepositoryPassword = null
         boolean captureFileFingerprints = false
-        String develocityPluginVersion
+        String develocityPluginVersion = null
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
@@ -461,13 +465,17 @@ class TestDevelocityInjection extends BaseInitScriptTest {
             return this
         }
 
+        DvInjectionTestConfig withDevelocityPluginVersion(String version = DEVELOCITY_PLUGIN_VERSION) {
+            develocityPluginVersion = version
+            return this
+        }
+
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
                 DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity-injection.init.gradle",
                 DEVELOCITY_INJECTION_ENABLED              : "true",
                 DEVELOCITY_URL                            : serverUrl,
                 DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "true",
-                DEVELOCITY_PLUGIN_VERSION                 : develocityPluginVersion,
                 DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: "true", // Need to upload in background since our Mock server doesn't cope with foreground upload
                 DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
             ]
@@ -477,6 +485,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
             if (pluginRepositoryUsername != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
             if (pluginRepositoryPassword != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
             if (captureFileFingerprints) envVars.put("DEVELOCITY_CAPTURE_FILE_FINGERPRINTS", "true")
+            if (develocityPluginVersion != null) envVars.put("DEVELOCITY_PLUGIN_VERSION", develocityPluginVersion)
             return envVars
         }
     }
