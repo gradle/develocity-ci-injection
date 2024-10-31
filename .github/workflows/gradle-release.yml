@@ -36,7 +36,7 @@ jobs:
       - name: Generate reference script with version
         run: ./gradlew promote -Pversion=${{ inputs.version }}
         env:
-          DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_SOLUTIONS_ACCESS_TOKEN }}
+          DEVELOCITY_ACCESS_KEY: ${{ secrets.DV_SOLUTIONS_ACCESS_KEY }}
 
       - name: Commit & push changes
         uses: stefanzweifel/git-auto-commit-action@v5
