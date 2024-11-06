@@ -17,7 +17,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         buildScanUrlIsNotCaptured(result)
 
         where:
-        testGradleVersion << ALL_VERSIONS
+        testGradleVersion << ALL_GRADLE_VERSIONS
     }
 
     @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
@@ -26,14 +26,14 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         captureBuildScanLinks()
 
         when:
-        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, DEVELOCITY_PLUGIN_VERSION)
+        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, testPluginVersion)
         def result = run(['help'], testGradleVersion.gradleVersion, config.envVars)
 
         then:
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << ALL_VERSIONS
+        [testGradleVersion, testPluginVersion] << versionsToTestForPluginInjection
     }
 
     @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
@@ -50,7 +50,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << ALL_VERSIONS
+        testGradleVersion << ALL_GRADLE_VERSIONS
     }
 
 
@@ -74,7 +74,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << CONFIGURATION_CACHE_VERSIONS
+        testGradleVersion << CONFIGURATION_CACHE_GRADLE_VERSIONS
     }
 
     void buildScanUrlIsCaptured(BuildResult result) {

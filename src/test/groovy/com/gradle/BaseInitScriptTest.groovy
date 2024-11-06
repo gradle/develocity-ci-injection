@@ -27,7 +27,7 @@ abstract class BaseInitScriptTest extends Specification {
     static final TestGradleVersion GRADLE_8_0 = new TestGradleVersion(GradleVersion.version('8.0.2'), 8, 19)
     static final TestGradleVersion GRADLE_8_X = new TestGradleVersion(GradleVersion.version('8.7'), 8, 21)
 
-    static final List<TestGradleVersion> ALL_VERSIONS = [
+    static final List<TestGradleVersion> ALL_GRADLE_VERSIONS = [
         GRADLE_3_X, // First version where TestKit supports environment variables
         GRADLE_4_X,
         GRADLE_5_X,
@@ -37,11 +37,21 @@ abstract class BaseInitScriptTest extends Specification {
         GRADLE_8_X,
     ]
 
-    static final List<TestGradleVersion> CONFIGURATION_CACHE_VERSIONS =
-        [GRADLE_7_X, GRADLE_8_0, GRADLE_8_X].intersect(ALL_VERSIONS)
+    static final List<TestGradleVersion> CONFIGURATION_CACHE_GRADLE_VERSIONS =
+        [GRADLE_7_X, GRADLE_8_0, GRADLE_8_X].intersect(ALL_GRADLE_VERSIONS)
 
-    static final List<TestGradleVersion> SETTINGS_PLUGIN_VERSIONS =
-        [GRADLE_6_X, GRADLE_7_X, GRADLE_8_0, GRADLE_8_X].intersect(ALL_VERSIONS)
+    // Gradle + plugin versions to test DV injection: used to test with project with no DV plugin defined
+    static def getVersionsToTestForPluginInjection(List<TestGradleVersion> gradleVersions = ALL_GRADLE_VERSIONS) {
+        [
+            gradleVersions,
+            [
+                "3.6.4", // Support server back to GE 2021.1
+                "3.16.2", // Last version before switch to Develocity
+                "3.17", // First Develocity plugin
+                DEVELOCITY_PLUGIN_VERSION // Latest Develocity plugin
+            ]
+        ].combinations()
+    }
 
     static final String PUBLIC_BUILD_SCAN_ID = 'i2wepy2gr7ovw'
     static final String DEFAULT_SCAN_UPLOAD_TOKEN = 'scan-upload-token'
