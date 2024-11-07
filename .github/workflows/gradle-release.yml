@@ -31,12 +31,12 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          develocity-access-key: ${{ secrets.DV_SOLUTIONS_ACCESS_KEY }}
 
       - name: Generate reference script with version
         run: ./gradlew promote -Pversion=${{ inputs.version }}
-        env:
-          DEVELOCITY_ACCESS_KEY: ${{ secrets.DV_SOLUTIONS_ACCESS_KEY }}
 
       - name: Commit & push changes
         uses: stefanzweifel/git-auto-commit-action@v5
