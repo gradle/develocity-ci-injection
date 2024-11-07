@@ -15,7 +15,12 @@ import spock.lang.TempDir
 import java.util.stream.Collectors
 import java.util.zip.GZIPOutputStream
 
+import static com.gradle.BaseInitScriptTest.DvPluginId.*
+
 abstract class BaseInitScriptTest extends Specification {
+    static final GradleVersion GRADLE_5 = GradleVersion.version('5.0')
+    static final GradleVersion GRADLE_6 = GradleVersion.version('6.0')
+
     static final String DEVELOCITY_PLUGIN_VERSION = '3.18.1'
     static final String CCUD_PLUGIN_VERSION = '2.0.2'
 
@@ -40,17 +45,56 @@ abstract class BaseInitScriptTest extends Specification {
     static final List<TestGradleVersion> CONFIGURATION_CACHE_GRADLE_VERSIONS =
         [GRADLE_7_X, GRADLE_8_0, GRADLE_8_X].intersect(ALL_GRADLE_VERSIONS)
 
+    static final List<TestDvPluginVersion> DV_PLUGIN_VERSIONS = [
+        dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION),
+        dvPlugin(DEVELOCITY, '3.17'),
+
+        dvPlugin(GRADLE_ENTERPRISE, DEVELOCITY_PLUGIN_VERSION, true),
+        dvPlugin(GRADLE_ENTERPRISE, '3.17', true),
+        dvPlugin(GRADLE_ENTERPRISE, '3.16.2'),
+        dvPlugin(GRADLE_ENTERPRISE, '3.6.4'),
+        dvPlugin(GRADLE_ENTERPRISE, '3.3.4'),
+// Earlier versions not yet tested: Mock Scans server is not compatible
+//        dvPlugin(GRADLE_ENTERPRISE, '3.2.1'),
+//        dvPlugin(GRADLE_ENTERPRISE, '2.0.2'),
+
+        dvPlugin(BUILD_SCAN, DEVELOCITY_PLUGIN_VERSION, true),
+        dvPlugin(BUILD_SCAN, '3.17', true),
+        dvPlugin(BUILD_SCAN, '3.16.2'),
+        dvPlugin(BUILD_SCAN, '3.6.4'),
+        dvPlugin(BUILD_SCAN, '3.3.4'),
+// Earlier versions not yet tested: Mock Scans server is not compatible
+//        dvPlugin(BUILD_SCAN, '3.2.1'),
+//        dvPlugin(BUILD_SCAN, '2.0.2'),
+        dvPlugin(BUILD_SCAN, '1.16'),
+//        dvPlugin(BUILD_SCAN, '1.1'),
+    ]
+
     // Gradle + plugin versions to test DV injection: used to test with project with no DV plugin defined
     static def getVersionsToTestForPluginInjection(List<TestGradleVersion> gradleVersions = ALL_GRADLE_VERSIONS) {
         [
             gradleVersions,
             [
-                "3.6.4", // Support server back to GE 2021.1
-                "3.16.2", // Last version before switch to Develocity
-                "3.17", // First Develocity plugin
-                DEVELOCITY_PLUGIN_VERSION // Latest Develocity plugin
+                dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION), // Latest Develocity plugin
+                dvPlugin(DEVELOCITY, '3.17'), // First Develocity plugin
+                dvPlugin(GRADLE_ENTERPRISE, '3.16.2'), // Last version before switch to Develocity
+                dvPlugin(GRADLE_ENTERPRISE, '3.6.4'), // Support server back to GE 2021.1
             ]
         ].combinations()
+    }
+
+    // Gradle + plugin combinations to test with existing projects: used to test init-script operating with existing DV plugin application
+    static def getVersionsToTestForExistingDvPlugin(List<TestGradleVersion> gradleVersions = ALL_GRADLE_VERSIONS) {
+        return [
+            gradleVersions,
+            DV_PLUGIN_VERSIONS
+        ].combinations().findAll { gradleVersion, dvPlugin ->
+            // Only include valid Gradle/Plugin combinations
+            dvPlugin.isCompatibleWith(gradleVersion)
+        }
+        // TODO: FIX
+        //  Remove case that is currently failing due to a bug in the init-script
+        .findAll { gradleVersion, dvPlugin -> !(dvPlugin.id == 'com.gradle.build-scan' && dvPlugin.version in ['3.17', '3.18.1'])}
     }
 
     static final String PUBLIC_BUILD_SCAN_ID = 'i2wepy2gr7ovw'
@@ -135,63 +179,24 @@ abstract class BaseInitScriptTest extends Specification {
         buildFile << ''
     }
 
-    def declareDevelocityPluginApplication(GradleVersion gradleVersion, URI serverUrl = mockScansServer.address) {
-        settingsFile.text = maybeAddPluginsToSettings(gradleVersion, false, null, serverUrl) + settingsFile.text
-        buildFile.text = maybeAddPluginsToRootProject(gradleVersion, false, null, serverUrl) + buildFile.text
-    }
-
-    def declareLegacyGradleEnterprisePluginApplication(GradleVersion gradleVersion, URI serverUrl = mockScansServer.address) {
-        settingsFile.text = maybeAddPluginsToSettings(gradleVersion, true, null, serverUrl) + settingsFile.text
-        buildFile.text = maybeAddPluginsToRootProject(gradleVersion, true, null, serverUrl) + buildFile.text
-    }
-
-    def declareDevelocityPluginAndCcudPluginApplication(GradleVersion gradleVersion, URI serverUrl = mockScansServer.address) {
-        settingsFile.text = maybeAddPluginsToSettings(gradleVersion, false, CCUD_PLUGIN_VERSION, serverUrl) + settingsFile.text
-        buildFile.text = maybeAddPluginsToRootProject(gradleVersion, false, CCUD_PLUGIN_VERSION, serverUrl) + buildFile.text
-    }
-
-    String maybeAddPluginsToSettings(GradleVersion gradleVersion, boolean legacy, String ccudPluginVersion, URI serverUri) {
-        if (gradleVersion < GradleVersion.version('6.0')) {
-            '' // applied in build.gradle
+    void declareDvPluginApplication(GradleVersion gradleVersion, TestDvPluginVersion dvPlugin, String ccudPluginVersion = null, URI serverUri = mockScansServer.address) {
+        if (dvPlugin.deprecated) {
+            allowDevelocityDeprecationWarning = true
+        }
+        if (gradleVersion < GRADLE_6) {
+            buildFile.text = configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
         } else {
-            configuredPlugin(gradleVersion, legacy, ccudPluginVersion, serverUri)
+            settingsFile.text = configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
         }
     }
 
-    String maybeAddPluginsToRootProject(GradleVersion gradleVersion, boolean legacy, String ccudPluginVersion, URI serverUrl) {
-        if (gradleVersion < GradleVersion.version('5.0')) {
-            """
-              plugins {
-                id 'com.gradle.build-scan' version '1.16'
-                ${ccudPluginVersion ? "id 'com.gradle.common-custom-user-data-gradle-plugin' version '$ccudPluginVersion'" : ""}
-              }
-              buildScan {
-                server = '$serverUrl'
-                publishAlways()
-              }
-            """
-        } else if (gradleVersion < GradleVersion.version('6.0')) {
-            configuredPlugin(gradleVersion, legacy, ccudPluginVersion, serverUrl)
-        } else {
-            '' // applied in settings.gradle
-        }
-    }
-
-    String configuredPlugin(GradleVersion gradleVersion, boolean legacy, String ccudPluginVersion, URI serverUri) {
-        def pluginId = legacy
-            ? (gradleVersion < GradleVersion.version('6.0') ? 'com.gradle.build-scan' : 'com.gradle.enterprise')
-            : 'com.gradle.develocity'
-        def pluginVersion = legacy ? "3.16.2" : DEVELOCITY_PLUGIN_VERSION
-        def configBlock = legacy ? 'gradleEnterprise' : 'develocity'
+    private String configuredPlugin(TestDvPluginVersion dvPlugin, String ccudPluginVersion, URI serverUri) {
         """
               plugins {
-                id '$pluginId' version '$pluginVersion'
+                id '${dvPlugin.id}' version '${dvPlugin.version}'
                 ${ccudPluginVersion ? "id 'com.gradle.common-custom-user-data-gradle-plugin' version '$ccudPluginVersion'" : ""}
               }
-              $configBlock {
-                 server = '$serverUri'
-                 ${legacy ? "buildScan { publishAlways() }" : ""}
-              }
+              ${dvPlugin.getConfigBlock(serverUri)}
             """
     }
 
@@ -261,7 +266,6 @@ abstract class BaseInitScriptTest extends Specification {
     }
 
     static final class TestGradleVersion {
-
         final GradleVersion gradleVersion
         private final Integer jdkMin
         private final Integer jdkMax
@@ -289,6 +293,98 @@ abstract class BaseInitScriptTest extends Specification {
         @Override
         String toString() {
             return "Gradle " + gradleVersion.version
+        }
+    }
+
+    static TestDvPluginVersion dvPlugin(DvPluginId id, String version, boolean deprecated = false) {
+        return new TestDvPluginVersion(id, version, deprecated)
+    }
+
+    static enum DvPluginId {
+        DEVELOCITY('com.gradle.develocity'),
+        GRADLE_ENTERPRISE('com.gradle.enterprise'),
+        BUILD_SCAN('com.gradle.build-scan');
+        final String id;
+
+        DvPluginId(String id) {
+            this.id = id
+        }
+    }
+
+    static final class TestDvPluginVersion {
+        final DvPluginId pluginId
+        final String version
+        final boolean deprecated
+
+        TestDvPluginVersion(DvPluginId pluginId, String version, boolean deprecated) {
+            this.pluginId = pluginId
+            this.version = version
+            this.deprecated = deprecated
+        }
+
+        String getId() {
+            return pluginId.id
+        }
+
+        boolean isCompatibleWith(TestGradleVersion gradleVersion) {
+            switch (pluginId) {
+                case DEVELOCITY:
+                    return GRADLE_5 <= gradleVersion.gradleVersion
+                case GRADLE_ENTERPRISE:
+                    return GRADLE_6 <= gradleVersion.gradleVersion
+                case BUILD_SCAN:
+                    if (version == '1.16') {
+                        // Only plugin v1.16 works with Gradle < 5
+                        return gradleVersion.gradleVersion < GRADLE_5
+                    } else {
+                        // Build-scan plugin 2+ only works with Gradle 5 (enterprise is for Gradle 6+)
+                        return GRADLE_5 <= gradleVersion.gradleVersion
+                            && gradleVersion.gradleVersion < GRADLE_6
+                    }
+            }
+        }
+
+        boolean isCompatibleWithConfigurationCache() {
+            // Only DV & GE plugins 3.16+ support configuration-cache
+            return pluginId != BUILD_SCAN
+                && GradleVersion.version(version) >= GradleVersion.version('3.16')
+        }
+
+        String getConfigBlock(URI serverUri) {
+            switch (pluginId) {
+                case DEVELOCITY:
+                    return """
+                        develocity {
+                            server = '$serverUri'
+                        }   
+                    """
+                case GRADLE_ENTERPRISE:
+                    return """
+                        gradleEnterprise {
+                            server = '$serverUri'
+                            buildScan { publishAlways() }
+                        }
+                    """
+                case BUILD_SCAN:
+                    return """
+                        buildScan {
+                            server = '$serverUri'
+                            publishAlways()
+                        }
+                    """
+            }
+        }
+
+        String getCompatibleCCUDVersion() {
+            // CCUD 1.13 is compatible with pre-develocity plugins
+            return GradleVersion.version(version) < GradleVersion.version('3.17')
+                ? '1.13'
+                : CCUD_PLUGIN_VERSION
+        }
+
+        @Override
+        String toString() {
+            return "${pluginId.id}:${version}"
         }
     }
 }

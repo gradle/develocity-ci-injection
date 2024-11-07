@@ -26,21 +26,21 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         captureBuildScanLinks()
 
         when:
-        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, testPluginVersion)
+        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, testDvPluginVersion.version)
         def result = run(['help'], testGradleVersion.gradleVersion, config.envVars)
 
         then:
         buildScanUrlIsCaptured(result)
 
         where:
-        [testGradleVersion, testPluginVersion] << versionsToTestForPluginInjection
+        [testGradleVersion, testDvPluginVersion] << versionsToTestForPluginInjection
     }
 
     @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
     def "can capture build scan url without develocity injection"() {
         given:
         captureBuildScanLinks()
-        declareDevelocityPluginApplication(testGradleVersion.gradleVersion)
+        declareDvPluginApplication(testGradleVersion.gradleVersion, dvPlugin)
 
         when:
         def config = new MinimalTestConfig()
@@ -50,7 +50,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << ALL_GRADLE_VERSIONS
+        [testGradleVersion, dvPlugin] << getVersionsToTestForExistingDvPlugin()
     }
 
 
@@ -58,7 +58,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
     def "can capture build scan url with config-cache enabled"() {
         given:
         captureBuildScanLinks()
-        declareDevelocityPluginApplication(testGradleVersion.gradleVersion)
+        declareDvPluginApplication(testGradleVersion.gradleVersion, dvPlugin)
 
         when:
         def config = new MinimalTestConfig()
@@ -74,7 +74,8 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << CONFIGURATION_CACHE_GRADLE_VERSIONS
+        [testGradleVersion, dvPlugin] << getVersionsToTestForExistingDvPlugin(CONFIGURATION_CACHE_GRADLE_VERSIONS)
+            .findAll { gradleVersion, dvPlugin -> dvPlugin.isCompatibleWithConfigurationCache() }
     }
 
     void buildScanUrlIsCaptured(BuildResult result) {
