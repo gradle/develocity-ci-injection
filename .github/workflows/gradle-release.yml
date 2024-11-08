@@ -33,7 +33,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          develocity-access-key: ${{ secrets.DV_SOLUTIONS_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.GE_SOLUTIONS_ACCESS_TOKEN }}
 
       - name: Generate reference script with version
         run: ./gradlew promote -Pversion=${{ inputs.version }}
