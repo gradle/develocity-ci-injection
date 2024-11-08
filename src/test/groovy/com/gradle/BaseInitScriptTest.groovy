@@ -53,21 +53,20 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(GRADLE_ENTERPRISE, '3.17', true),
         dvPlugin(GRADLE_ENTERPRISE, '3.16.2'),
         dvPlugin(GRADLE_ENTERPRISE, '3.6.4'),
-        dvPlugin(GRADLE_ENTERPRISE, '3.3.4'),
-// Earlier versions not yet tested: Mock Scans server is not compatible
-//        dvPlugin(GRADLE_ENTERPRISE, '3.2.1'),
-//        dvPlugin(GRADLE_ENTERPRISE, '2.0.2'),
+        dvPlugin(GRADLE_ENTERPRISE, '3.3.4'), // Has background build-scan upload
+        dvPlugin(GRADLE_ENTERPRISE, '3.2.1'), // Has 'gradleEnterprise.server' element
+        dvPlugin(GRADLE_ENTERPRISE, '3.1.1'), // Has 'gradleEnterprise.buildScan.server' value
+        dvPlugin(GRADLE_ENTERPRISE, '3.0'), // Earliest version of `com.gradle.enterprise` plugin
 
         dvPlugin(BUILD_SCAN, DEVELOCITY_PLUGIN_VERSION, true),
         dvPlugin(BUILD_SCAN, '3.17', true),
-        dvPlugin(BUILD_SCAN, '3.16.2'),
-        dvPlugin(BUILD_SCAN, '3.6.4'),
-        dvPlugin(BUILD_SCAN, '3.3.4'),
-// Earlier versions not yet tested: Mock Scans server is not compatible
-//        dvPlugin(BUILD_SCAN, '3.2.1'),
-//        dvPlugin(BUILD_SCAN, '2.0.2'),
+        dvPlugin(BUILD_SCAN, '3.16.2'), // Last version before DV
+        dvPlugin(BUILD_SCAN, '3.3.4'), // Has background build-scan upload
+        dvPlugin(BUILD_SCAN, '3.0'),
+        dvPlugin(BUILD_SCAN, '2.4.2'),
+        dvPlugin(BUILD_SCAN, '2.0.2'),
         dvPlugin(BUILD_SCAN, '1.16'),
-//        dvPlugin(BUILD_SCAN, '1.1'),
+        dvPlugin(BUILD_SCAN, '1.10'),
     ]
 
     // Gradle + plugin versions to test DV injection: used to test with project with no DV plugin defined
@@ -123,16 +122,28 @@ abstract class BaseInitScriptTest extends Specification {
                     context.response.status(401).send()
                     return
                 }
+                def pluginVersion = context.pathTokens.pluginVersion
                 def scanUrlString = "${mockScansServer.address}s/$PUBLIC_BUILD_SCAN_ID"
                 def body = [
                     id     : PUBLIC_BUILD_SCAN_ID,
                     scanUrl: scanUrlString.toString(),
                 ]
-                def out = new ByteArrayOutputStream()
-                new GZIPOutputStream(out).withStream { smileWriter.writeValue(it, body) }
-                context.response
-                    .contentType('application/vnd.gradle.scan-ack')
-                    .send(out.toByteArray())
+                def sendJsonResponse = GradleVersion.version(pluginVersion) >= GradleVersion.version('3.1')
+                if (!sendJsonResponse) {
+                    def out = new ByteArrayOutputStream()
+                    new GZIPOutputStream(out).withStream { smileWriter.writeValue(it, body) }
+                    context.request.getBody(1024 * 1024 * 10).then {
+                        context.response
+                            .contentType('application/vnd.gradle.scan-ack')
+                            .send(out.toByteArray())
+                    }
+                } else {
+                    context.request.getBody(1024 * 1024 * 10).then {
+                        context.response
+                            .contentType('application/vnd.gradle.scan-ack+json')
+                            .send(jsonWriter.writeValueAsBytes(body))
+                    }
+                }
             }
             prefix('scans/publish') {
                 post('gradle/:pluginVersion/token') {
@@ -160,7 +171,7 @@ abstract class BaseInitScriptTest extends Specification {
                     context.request.getBody(1024 * 1024 * 10).then {
                         context.response
                             .contentType('application/vnd.gradle.scan-upload-ack+json')
-                            .send()
+                            .send(jsonWriter.writeValueAsBytes([:]))
                     }
                 }
                 notFound()
@@ -333,21 +344,20 @@ abstract class BaseInitScriptTest extends Specification {
                 case GRADLE_ENTERPRISE:
                     return GRADLE_6 <= gradleVersion.gradleVersion
                 case BUILD_SCAN:
-                    if (version == '1.16') {
-                        // Only plugin v1.16 works with Gradle < 5
-                        return gradleVersion.gradleVersion < GRADLE_5
-                    } else {
+                    if (pluginVersionAtLeast('2.0')) {
                         // Build-scan plugin 2+ only works with Gradle 5 (enterprise is for Gradle 6+)
                         return GRADLE_5 <= gradleVersion.gradleVersion
                             && gradleVersion.gradleVersion < GRADLE_6
+                    } else {
+                        // Only plugin v1.x works with Gradle < 5
+                        return gradleVersion.gradleVersion < GRADLE_5
                     }
             }
         }
 
         boolean isCompatibleWithConfigurationCache() {
             // Only DV & GE plugins 3.16+ support configuration-cache
-            return pluginId != BUILD_SCAN
-                && GradleVersion.version(version) >= GradleVersion.version('3.16')
+            return pluginId != BUILD_SCAN && pluginVersionAtLeast('3.16')
         }
 
         String getConfigBlock(URI serverUri) {
@@ -359,12 +369,23 @@ abstract class BaseInitScriptTest extends Specification {
                         }   
                     """
                 case GRADLE_ENTERPRISE:
-                    return """
-                        gradleEnterprise {
-                            server = '$serverUri'
-                            buildScan { publishAlways() }
-                        }
-                    """
+                    if (pluginVersionAtLeast('3.2')) {
+                        return """
+                            gradleEnterprise {
+                                server = '$serverUri'
+                                buildScan { publishAlways() }
+                            }
+                        """
+                    } else {
+                        return """
+                            gradleEnterprise {
+                                buildScan {
+                                    server = '$serverUri'
+                                    publishAlways() 
+                                }
+                            }
+                        """
+                    }
                 case BUILD_SCAN:
                     return """
                         buildScan {
@@ -377,9 +398,11 @@ abstract class BaseInitScriptTest extends Specification {
 
         String getCompatibleCCUDVersion() {
             // CCUD 1.13 is compatible with pre-develocity plugins
-            return GradleVersion.version(version) < GradleVersion.version('3.17')
-                ? '1.13'
-                : CCUD_PLUGIN_VERSION
+            return pluginVersionAtLeast('3.17') ? CCUD_PLUGIN_VERSION : '1.13'
+        }
+
+        private boolean pluginVersionAtLeast(String targetVersion) {
+            GradleVersion.version(version) >= GradleVersion.version(targetVersion)
         }
 
         @Override
