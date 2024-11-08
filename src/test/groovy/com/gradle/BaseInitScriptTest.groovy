@@ -51,11 +51,10 @@ abstract class BaseInitScriptTest extends Specification {
 
         dvPlugin(GRADLE_ENTERPRISE, DEVELOCITY_PLUGIN_VERSION, true),
         dvPlugin(GRADLE_ENTERPRISE, '3.17', true),
-        dvPlugin(GRADLE_ENTERPRISE, '3.16.2'),
-        dvPlugin(GRADLE_ENTERPRISE, '3.6.4'),
-        dvPlugin(GRADLE_ENTERPRISE, '3.3.4'), // Has background build-scan upload
-        dvPlugin(GRADLE_ENTERPRISE, '3.2.1'), // Has 'gradleEnterprise.server' element
-        dvPlugin(GRADLE_ENTERPRISE, '3.1.1'), // Has 'gradleEnterprise.buildScan.server' value
+        dvPlugin(GRADLE_ENTERPRISE, '3.16.2'),  // Last version before DV
+        dvPlugin(GRADLE_ENTERPRISE, '3.11.1'), // Oldest version compatible with CCUD 2.0.2
+        dvPlugin(GRADLE_ENTERPRISE, '3.3.4'), // Introduced background build-scan upload
+        dvPlugin(GRADLE_ENTERPRISE, '3.2.1'), // Introduced 'gradleEnterprise.server' element
         dvPlugin(GRADLE_ENTERPRISE, '3.0'), // Earliest version of `com.gradle.enterprise` plugin
 
         dvPlugin(BUILD_SCAN, DEVELOCITY_PLUGIN_VERSION, true),
@@ -397,8 +396,17 @@ abstract class BaseInitScriptTest extends Specification {
         }
 
         String getCompatibleCCUDVersion() {
-            // CCUD 1.13 is compatible with pre-develocity plugins
-            return pluginVersionAtLeast('3.17') ? CCUD_PLUGIN_VERSION : '1.13'
+            if (pluginVersionAtLeast('3.11')) {
+                return CCUD_PLUGIN_VERSION
+            }
+            if (pluginVersionAtLeast('3.2')) {
+                return '1.13'
+            }
+            if (pluginId == BUILD_SCAN && version == '1.16') {
+                return '1.13'
+            }
+            // No known compatible CCUD for older plugin versions
+            return null
         }
 
         private boolean pluginVersionAtLeast(String targetVersion) {
