@@ -179,11 +179,11 @@ abstract class BaseInitScriptTest extends Specification {
         buildFile << ''
     }
 
-    void declareDvPluginApplication(GradleVersion gradleVersion, TestDvPluginVersion dvPlugin, String ccudPluginVersion = null, URI serverUri = mockScansServer.address) {
+    void declareDvPluginApplication(TestGradleVersion testGradle, TestDvPluginVersion dvPlugin, String ccudPluginVersion = null, URI serverUri = mockScansServer.address) {
         if (dvPlugin.deprecated) {
             allowDevelocityDeprecationWarning = true
         }
-        if (gradleVersion < GRADLE_6) {
+        if (testGradle.gradleVersion < GRADLE_6) {
             buildFile.text = configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
         } else {
             settingsFile.text = configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
@@ -200,8 +200,8 @@ abstract class BaseInitScriptTest extends Specification {
             """
     }
 
-    BuildResult run(List<String> args, GradleVersion gradleVersion = GradleVersion.current(), Map<String, String> envVars = [:]) {
-        def result = createRunner(args, gradleVersion, envVars).build()
+    BuildResult run(List<String> args, TestGradleVersion testGradle, Map<String, String> envVars = [:]) {
+        def result = createRunner(args, testGradle.gradleVersion, envVars).build()
         assertNoDeprecationWarning(result)
     }
 
