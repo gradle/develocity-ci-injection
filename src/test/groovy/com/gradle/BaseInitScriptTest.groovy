@@ -213,6 +213,7 @@ abstract class BaseInitScriptTest extends Specification {
     BuildResult run(List<String> args, TestGradleVersion testGradle, Map<String, String> envVars = [:]) {
         def result = createRunner(args, testGradle.gradleVersion, envVars).build()
         assertNoDeprecationWarning(result)
+        assertNoStackTraces(result)
     }
 
     GradleRunner createRunner(List<String> args, GradleVersion gradleVersion = GradleVersion.current(), Map<String, String> envVars = [:]) {
@@ -272,6 +273,11 @@ abstract class BaseInitScriptTest extends Specification {
         if (!allowDevelocityDeprecationWarning) {
             assert !result.output.contains("WARNING: The following functionality has been deprecated")
         }
+        return result
+    }
+
+    BuildResult assertNoStackTraces(BuildResult result) {
+        assert !result.output.contains("Exception:")
         return result
     }
 
@@ -399,10 +405,10 @@ abstract class BaseInitScriptTest extends Specification {
             if (pluginVersionAtLeast('3.11')) {
                 return CCUD_PLUGIN_VERSION
             }
-            if (pluginVersionAtLeast('3.2')) {
-                return '1.13'
-            }
             if (pluginId == BUILD_SCAN && version == '1.16') {
+                return CCUD_PLUGIN_VERSION
+            }
+            if (pluginVersionAtLeast('3.6')) {
                 return '1.13'
             }
             // No known compatible CCUD for older plugin versions
