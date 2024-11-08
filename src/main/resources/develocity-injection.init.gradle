@@ -163,7 +163,7 @@ void enableDevelocityInjection() {
                     }
                     if (!scanPluginComponent) {
                         def pluginClass = dvOrGe(DEVELOCITY_PLUGIN_CLASS, BUILD_SCAN_PLUGIN_CLASS)
-                        def pluginVersion = dvOrGe(develocityPluginVersion, "1.16")
+                        def pluginVersion = atLeastGradle5 ? develocityPluginVersion : "1.16"
                         applyPluginExternally(pluginManager, pluginClass, pluginVersion)
                         def rootExtension = dvOrGe(
                             { develocity },
