@@ -5,76 +5,77 @@ import spock.lang.Requires
 
 class TestBuildScanCapture extends BaseInitScriptTest {
 
-    @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "does not capture build scan url when init-script not enabled"() {
         given:
         captureBuildScanLinks()
 
         when:
-        def result = run(['help'], testGradleVersion.gradleVersion, [:])
+        def result = run(['help'], testGradle, [:])
 
         then:
         buildScanUrlIsNotCaptured(result)
 
         where:
-        testGradleVersion << ALL_VERSIONS
+        testGradle << ALL_GRADLE_VERSIONS
     }
 
-    @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "can capture build scan url with develocity injection"() {
         given:
         captureBuildScanLinks()
 
         when:
-        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, DEVELOCITY_PLUGIN_VERSION)
-        def result = run(['help'], testGradleVersion.gradleVersion, config.envVars)
+        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, testDvPlugin.version)
+        def result = run(['help'], testGradle, config.envVars)
 
         then:
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << ALL_VERSIONS
+        [testGradle, testDvPlugin] << versionsToTestForPluginInjection
     }
 
-    @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "can capture build scan url without develocity injection"() {
         given:
         captureBuildScanLinks()
-        declareDevelocityPluginApplication(testGradleVersion.gradleVersion)
+        declareDvPluginApplication(testGradle, testDvPlugin)
 
         when:
         def config = new MinimalTestConfig()
-        def result = run(['help'], testGradleVersion.gradleVersion, config.envVars)
+        def result = run(['help'], testGradle, config.envVars)
 
         then:
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << ALL_VERSIONS
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
     }
 
 
-    @Requires({data.testGradleVersion.compatibleWithCurrentJvm})
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "can capture build scan url with config-cache enabled"() {
         given:
         captureBuildScanLinks()
-        declareDevelocityPluginApplication(testGradleVersion.gradleVersion)
+        declareDvPluginApplication(testGradle, testDvPlugin)
 
         when:
         def config = new MinimalTestConfig()
-        def result = run(['help', '--configuration-cache'], testGradleVersion.gradleVersion, config.envVars)
+        def result = run(['help', '--configuration-cache'], testGradle, config.envVars)
 
         then:
         buildScanUrlIsCaptured(result)
 
         when:
-        result = run(['help', '--configuration-cache'], testGradleVersion.gradleVersion, config.envVars)
+        result = run(['help', '--configuration-cache'], testGradle, config.envVars)
 
         then:
         buildScanUrlIsCaptured(result)
 
         where:
-        testGradleVersion << CONFIGURATION_CACHE_VERSIONS
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin(CONFIGURATION_CACHE_GRADLE_VERSIONS)
+            .findAll { gradleVersion, dvPlugin -> dvPlugin.isCompatibleWithConfigurationCache() }
     }
 
     void buildScanUrlIsCaptured(BuildResult result) {
