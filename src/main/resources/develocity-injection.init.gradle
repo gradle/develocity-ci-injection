@@ -145,6 +145,14 @@ void enableDevelocityInjection() {
         return geValue instanceof Closure<?> ? geValue() : geValue
     }
 
+    def printEnforcingDevelocityUrl = {
+        logger.lifecycle("Enforcing Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer")
+    }
+
+    def printAcceptingGradleTermsOfUse = {
+        logger.lifecycle("Accepting Gradle Terms of Use: $buildScanTermsOfUseUrl")
+    }
+
     // finish early if configuration parameters passed in via system properties are not valid/supported
     if (ccudPluginVersion && isNotAtLeast(ccudPluginVersion, '1.7')) {
         logger.warn("Common Custom User Data Gradle plugin must be at least 1.7. Configured version is $ccudPluginVersion.")
@@ -196,38 +204,46 @@ void enableDevelocityInjection() {
                             }
                         }
                     }
+                }
 
-                    pluginManager.withPlugin(BUILD_SCAN_PLUGIN_ID) {
-                        // Only execute if develocity plugin isn't applied.
-                        if (gradle.rootProject.extensions.findByName("develocity")) return
+                def configureDvOrBsExtension = {
+                    if (gradle.rootProject.extensions.findByName("develocity")) {
                         afterEvaluate {
                             if (develocityUrl && develocityEnforceUrl) {
-                                logger.lifecycle("Enforcing Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer")
-                                buildScan.server = develocityUrl
-                                buildScan.allowUntrustedServer = develocityAllowUntrustedServer
-                            }
-                        }
-
-                        if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
-                            buildScan.termsOfServiceUrl = buildScanTermsOfUseUrl
-                            buildScan.termsOfServiceAgree = buildScanTermsOfUseAgree
-                        }
-                    }
-
-                    pluginManager.withPlugin(DEVELOCITY_PLUGIN_ID) {
-                        afterEvaluate {
-                            if (develocityUrl && develocityEnforceUrl) {
-                                logger.lifecycle("Enforcing Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer")
+                                printEnforcingDevelocityUrl()
                                 develocity.server = develocityUrl
                                 develocity.allowUntrustedServer = develocityAllowUntrustedServer
                             }
                         }
 
                         if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
+                            printAcceptingGradleTermsOfUse()
                             develocity.buildScan.termsOfUseUrl = buildScanTermsOfUseUrl
                             develocity.buildScan.termsOfUseAgree = buildScanTermsOfUseAgree
                         }
+                    } else {
+                        afterEvaluate {
+                            if (develocityUrl && develocityEnforceUrl) {
+                                printEnforcingDevelocityUrl()
+                                buildScan.server = develocityUrl
+                                buildScan.allowUntrustedServer = develocityAllowUntrustedServer
+                            }
+                        }
+
+                        if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
+                            printAcceptingGradleTermsOfUse()
+                            buildScan.termsOfServiceUrl = buildScanTermsOfUseUrl
+                            buildScan.termsOfServiceAgree = buildScanTermsOfUseAgree
+                        }
                     }
+                }
+
+                pluginManager.withPlugin(BUILD_SCAN_PLUGIN_ID, configureDvOrBsExtension)
+
+                pluginManager.withPlugin(DEVELOCITY_PLUGIN_ID) {
+                    // Proper extension will be configured by the other callback.
+                    if (pluginManager.hasPlugin(BUILD_SCAN_PLUGIN_ID)) return
+                    configureDvOrBsExtension()
                 }
 
                 if (ccudPluginVersion && atLeastGradle4) {
@@ -278,34 +294,36 @@ void enableDevelocityInjection() {
                         }
                     )
                 }
-
-                eachDevelocitySettingsExtension(settings,
-                    { develocity ->
-                        if (develocityUrl && develocityEnforceUrl) {
-                            logger.lifecycle("Enforcing Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer")
-                            develocity.server = develocityUrl
-                            develocity.allowUntrustedServer = develocityAllowUntrustedServer
-                        }
-
-                        if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
-                            develocity.buildScan.termsOfUseUrl = buildScanTermsOfUseUrl
-                            develocity.buildScan.termsOfUseAgree = buildScanTermsOfUseAgree
-                        }
-                    },
-                    { gradleEnterprise ->
-                        if (develocityUrl && develocityEnforceUrl) {
-                            logger.lifecycle("Enforcing Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer")
-                            gradleEnterprise.server = develocityUrl
-                            gradleEnterprise.allowUntrustedServer = develocityAllowUntrustedServer
-                        }
-
-                        if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
-                            gradleEnterprise.buildScan.termsOfServiceUrl = buildScanTermsOfUseUrl
-                            gradleEnterprise.buildScan.termsOfServiceAgree = buildScanTermsOfUseAgree
-                        }
-                    }
-                )
             }
+
+            eachDevelocitySettingsExtension(settings,
+                { develocity ->
+                    if (develocityUrl && develocityEnforceUrl) {
+                        printEnforcingDevelocityUrl()
+                        develocity.server = develocityUrl
+                        develocity.allowUntrustedServer = develocityAllowUntrustedServer
+                    }
+
+                    if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
+                        printAcceptingGradleTermsOfUse()
+                        develocity.buildScan.termsOfUseUrl = buildScanTermsOfUseUrl
+                        develocity.buildScan.termsOfUseAgree = buildScanTermsOfUseAgree
+                    }
+                },
+                { gradleEnterprise ->
+                    if (develocityUrl && develocityEnforceUrl) {
+                        printEnforcingDevelocityUrl()
+                        gradleEnterprise.server = develocityUrl
+                        gradleEnterprise.allowUntrustedServer = develocityAllowUntrustedServer
+                    }
+
+                    if (buildScanTermsOfUseUrl && buildScanTermsOfUseAgree) {
+                        printAcceptingGradleTermsOfUse()
+                        gradleEnterprise.buildScan.termsOfServiceUrl = buildScanTermsOfUseUrl
+                        gradleEnterprise.buildScan.termsOfServiceAgree = buildScanTermsOfUseAgree
+                    }
+                }
+            )
 
             if (ccudPluginVersion) {
                 if (!settings.pluginManager.hasPlugin(CCUD_PLUGIN_ID)) {
