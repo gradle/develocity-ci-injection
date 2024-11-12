@@ -90,9 +90,6 @@ abstract class BaseInitScriptTest extends Specification {
             // Only include valid Gradle/Plugin combinations
             dvPlugin.isCompatibleWith(gradleVersion)
         }
-        // TODO: FIX
-        //  Remove case that is currently failing due to a bug in the init-script
-        .findAll { gradleVersion, dvPlugin -> !(dvPlugin.id == 'com.gradle.build-scan' && dvPlugin.version in ['3.17', '3.18.1'])}
     }
 
     static final String PUBLIC_BUILD_SCAN_ID = 'i2wepy2gr7ovw'
