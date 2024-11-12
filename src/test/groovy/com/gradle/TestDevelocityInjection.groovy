@@ -199,6 +199,29 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "enforces Develocity URL and allowUntrustedServer in project with DV plugin already defined if enforce url parameter is enabled and no DV plugin version configured"() {
+        given:
+        declareDvPluginApplication(testGradle, testDvPlugin, null, URI.create('https://develocity-server.invalid'))
+
+        when:
+        def config = testConfig().withServer(mockScansServer.address, true).withoutDevelocityPluginVersion()
+        def result = run(testGradle, config)
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputEnforcesDevelocityUrl(result, mockScansServer.address.toString(), true)
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "can configure alternative repository for plugins when Develocity plugin is applied by the init script"() {
         when:
         def config = testConfig().withPluginRepository(new URI('https://plugins.grdev.net/m2'))
@@ -397,16 +420,21 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     static class DvInjectionTestConfig {
         String serverUrl
         boolean enforceUrl = false
+        String develocityPluginVersion = null
         String ccudPluginVersion = null
         String pluginRepositoryUrl = null
         String pluginRepositoryUsername = null
         String pluginRepositoryPassword = null
         boolean captureFileFingerprints = false
-        String develocityPluginVersion
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
             this.develocityPluginVersion = develocityPluginVersion
+        }
+
+        DvInjectionTestConfig withoutDevelocityPluginVersion() {
+            develocityPluginVersion = null
+            return this
         }
 
         DvInjectionTestConfig withCCUDPlugin(String version = CCUD_PLUGIN_VERSION) {
@@ -442,11 +470,11 @@ class TestDevelocityInjection extends BaseInitScriptTest {
                 DEVELOCITY_INJECTION_ENABLED              : "true",
                 DEVELOCITY_URL                            : serverUrl,
                 DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "true",
-                DEVELOCITY_PLUGIN_VERSION                 : develocityPluginVersion,
                 DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: "true", // Need to upload in background since our Mock server doesn't cope with foreground upload
                 DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
             ]
             if (enforceUrl) envVars.put("DEVELOCITY_ENFORCE_URL", "true")
+            if (develocityPluginVersion != null) envVars.put("DEVELOCITY_PLUGIN_VERSION", develocityPluginVersion)
             if (ccudPluginVersion != null) envVars.put("DEVELOCITY_CCUD_PLUGIN_VERSION", ccudPluginVersion)
             if (pluginRepositoryUrl != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_URL", pluginRepositoryUrl)
             if (pluginRepositoryUsername != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
