@@ -27,3 +27,7 @@ The following Develocity CI integrations leverage the Gradle init-script from th
 - Jenkins: [Jenkins Gradle Plugin](https://github.com/jenkinsci/gradle-plugin)
 - GitLab: [Develocity Gitlab Templates](https://github.com/gradle/develocity-gitlab-templates)
 - TeamCity: [TeamCity Build Scan Plugin](https://github.com/etiennestuder/teamcity-build-scan-plugin)
+
+The following Develocity tooling also leverages this init-script.
+
+- [Develocity Build Validation Scripts](https://github.com/gradle/gradle-enterprise-build-validation-scripts)
