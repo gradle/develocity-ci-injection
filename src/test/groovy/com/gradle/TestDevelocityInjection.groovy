@@ -176,6 +176,45 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can accept Gradle Terms of Use when Develocity plugin is applied by the init script"() {
+        when:
+        def config = testConfig(testDvPlugin.version).withAcceptGradleTermsOfUse()
+        def result = run(testGradle, config)
+
+        then:
+        outputContainsDevelocityPluginApplicationViaInitScript(result, testGradle.gradleVersion, testDvPlugin.version)
+        outputContainsDevelocityConnectionInfo(result, mockScansServer.address.toString(), true)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+        outputContainsPluginRepositoryInfo(result, 'https://plugins.gradle.org/m2')
+
+        and:
+        outputContainsAcceptingGradleTermsOfUse(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForPluginInjection()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can accept Gradle Terms of Use in project with DV plugin already defined"() {
+        given:
+        declareDvPluginApplication(testGradle, testDvPlugin)
+
+        when:
+        def config = testConfig(testDvPlugin.version).withServer(mockScansServer.address).withAcceptGradleTermsOfUse().withoutDevelocityPluginVersion()
+        def result = run(testGradle, config)
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputContainsAcceptingGradleTermsOfUse(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "enforces Develocity URL and allowUntrustedServer in project with DV plugin already defined if enforce url parameter is enabled"() {
         given:
         declareDvPluginApplication(testGradle, testDvPlugin, null, URI.create('https://develocity-server.invalid'))
@@ -405,6 +444,12 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         assert 1 == result.output.count(enforceUrl)
     }
 
+    void outputContainsAcceptingGradleTermsOfUse(BuildResult result) {
+        def message = "Accepting Gradle Terms of Use: https://gradle.com/help/legal-terms-of-use"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
     private BuildResult run(TestGradleVersion testGradle, DvInjectionTestConfig config, List<String> args = ["help"]) {
         return run(args, testGradle, config.envVars)
     }
@@ -426,6 +471,8 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         String pluginRepositoryUsername = null
         String pluginRepositoryPassword = null
         boolean captureFileFingerprints = false
+        String termsOfUseUrl = null
+        String termsOfUseAgree = null
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
@@ -464,6 +511,12 @@ class TestDevelocityInjection extends BaseInitScriptTest {
             return this
         }
 
+        DvInjectionTestConfig withAcceptGradleTermsOfUse() {
+            this.termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+            this.termsOfUseAgree = "yes"
+            return this
+        }
+
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
                 DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity-injection.init.gradle",
@@ -480,6 +533,8 @@ class TestDevelocityInjection extends BaseInitScriptTest {
             if (pluginRepositoryUsername != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
             if (pluginRepositoryPassword != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
             if (captureFileFingerprints) envVars.put("DEVELOCITY_CAPTURE_FILE_FINGERPRINTS", "true")
+            if (termsOfUseUrl != null) envVars.put("DEVELOCITY_TERMS_OF_USE_URL", termsOfUseUrl)
+            if (termsOfUseAgree != null) envVars.put("DEVELOCITY_TERMS_OF_USE_AGREE", termsOfUseAgree)
             return envVars
         }
     }

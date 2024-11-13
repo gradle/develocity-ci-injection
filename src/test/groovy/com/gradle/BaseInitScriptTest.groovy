@@ -254,6 +254,8 @@ abstract class BaseInitScriptTest extends Specification {
             DEVELOCITY_CCUD_PLUGIN_VERSION            : "develocity.ccud-plugin.version",
             DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: "develocity.build-scan.upload-in-background",
             DEVELOCITY_CAPTURE_FILE_FINGERPRINTS      : "develocity.capture-file-fingerprints",
+            DEVELOCITY_TERMS_OF_USE_URL               : "develocity.terms-of-use.url",
+            DEVELOCITY_TERMS_OF_USE_AGREE             : "develocity.terms-of-use.agree",
             GRADLE_PLUGIN_REPOSITORY_URL              : "gradle.plugin-repository.url",
             GRADLE_PLUGIN_REPOSITORY_USERNAME         : "gradle.plugin-repository.username",
             GRADLE_PLUGIN_REPOSITORY_PASSWORD         : "gradle.plugin-repository.password",
