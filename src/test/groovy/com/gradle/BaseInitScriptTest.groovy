@@ -208,6 +208,7 @@ abstract class BaseInitScriptTest extends Specification {
     }
 
     BuildResult run(List<String> args, TestGradleVersion testGradle, Map<String, String> envVars = [:]) {
+        println(envVars)
         def result = createRunner(args, testGradle.gradleVersion, envVars).build()
         assertNoDeprecationWarning(result)
         assertNoStackTraces(result)
