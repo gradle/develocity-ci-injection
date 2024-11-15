@@ -200,7 +200,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         declareDvPluginApplication(testGradle, testDvPlugin)
 
         when:
-        def config = testConfig(testDvPlugin.version).withServer(mockScansServer.address).withAcceptGradleTermsOfUse().withoutDevelocityPluginVersion()
+        def config = testConfig().withAcceptGradleTermsOfUse().withoutDevelocityPluginVersion()
         def result = run(testGradle, config)
 
         then:
