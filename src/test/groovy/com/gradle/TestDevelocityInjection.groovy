@@ -176,6 +176,45 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can accept Gradle Terms of Use when Develocity plugin is applied by the init script"() {
+        when:
+        def config = testConfig(testDvPlugin.version).withAcceptGradleTermsOfUse()
+        def result = run(testGradle, config)
+
+        then:
+        outputContainsDevelocityPluginApplicationViaInitScript(result, testGradle.gradleVersion, testDvPlugin.version)
+        outputContainsDevelocityConnectionInfo(result, mockScansServer.address.toString(), true)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+        outputContainsPluginRepositoryInfo(result, 'https://plugins.gradle.org/m2')
+
+        and:
+        outputContainsAcceptingGradleTermsOfUse(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForPluginInjection()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can accept Gradle Terms of Use in project with DV plugin already defined"() {
+        given:
+        declareDvPluginApplication(testGradle, testDvPlugin)
+
+        when:
+        def config = testConfig().withAcceptGradleTermsOfUse().withoutDevelocityPluginVersion()
+        def result = run(testGradle, config)
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputContainsAcceptingGradleTermsOfUse(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "enforces Develocity URL and allowUntrustedServer in project with DV plugin already defined if enforce url parameter is enabled"() {
         given:
         declareDvPluginApplication(testGradle, testDvPlugin, null, URI.create('https://develocity-server.invalid'))
@@ -196,8 +235,29 @@ class TestDevelocityInjection extends BaseInitScriptTest {
 
         where:
         [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
-            // TODO: There is a bug in the init-script, trying to set `gradleEnterprise.server` does not work for GE plugin `v3.0`
-            .findAll {testGradle, testDvPlugin -> !(testDvPlugin.pluginId.id == 'com.gradle.enterprise' && testDvPlugin.version == '3.0')}
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "enforces Develocity URL and allowUntrustedServer in project with DV plugin already defined if enforce url parameter is enabled and no DV plugin version configured"() {
+        given:
+        declareDvPluginApplication(testGradle, testDvPlugin, null, URI.create('https://develocity-server.invalid'))
+
+        when:
+        def config = testConfig().withServer(mockScansServer.address, true).withoutDevelocityPluginVersion()
+        def result = run(testGradle, config)
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputEnforcesDevelocityUrl(result, mockScansServer.address.toString(), true)
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
@@ -384,6 +444,12 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         assert 1 == result.output.count(enforceUrl)
     }
 
+    void outputContainsAcceptingGradleTermsOfUse(BuildResult result) {
+        def message = "Accepting Gradle Terms of Use: https://gradle.com/help/legal-terms-of-use"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
     private BuildResult run(TestGradleVersion testGradle, DvInjectionTestConfig config, List<String> args = ["help"]) {
         return run(args, testGradle, config.envVars)
     }
@@ -399,16 +465,23 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     static class DvInjectionTestConfig {
         String serverUrl
         boolean enforceUrl = false
+        String develocityPluginVersion = null
         String ccudPluginVersion = null
         String pluginRepositoryUrl = null
         String pluginRepositoryUsername = null
         String pluginRepositoryPassword = null
         boolean captureFileFingerprints = false
-        String develocityPluginVersion
+        String termsOfUseUrl = null
+        String termsOfUseAgree = null
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
             this.develocityPluginVersion = develocityPluginVersion
+        }
+
+        DvInjectionTestConfig withoutDevelocityPluginVersion() {
+            develocityPluginVersion = null
+            return this
         }
 
         DvInjectionTestConfig withCCUDPlugin(String version = CCUD_PLUGIN_VERSION) {
@@ -438,22 +511,30 @@ class TestDevelocityInjection extends BaseInitScriptTest {
             return this
         }
 
+        DvInjectionTestConfig withAcceptGradleTermsOfUse() {
+            this.termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+            this.termsOfUseAgree = "yes"
+            return this
+        }
+
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
                 DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity-injection.init.gradle",
                 DEVELOCITY_INJECTION_ENABLED              : "true",
                 DEVELOCITY_URL                            : serverUrl,
                 DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "true",
-                DEVELOCITY_PLUGIN_VERSION                 : develocityPluginVersion,
                 DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: "true", // Need to upload in background since our Mock server doesn't cope with foreground upload
                 DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
             ]
             if (enforceUrl) envVars.put("DEVELOCITY_ENFORCE_URL", "true")
+            if (develocityPluginVersion != null) envVars.put("DEVELOCITY_PLUGIN_VERSION", develocityPluginVersion)
             if (ccudPluginVersion != null) envVars.put("DEVELOCITY_CCUD_PLUGIN_VERSION", ccudPluginVersion)
             if (pluginRepositoryUrl != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_URL", pluginRepositoryUrl)
             if (pluginRepositoryUsername != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
             if (pluginRepositoryPassword != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
             if (captureFileFingerprints) envVars.put("DEVELOCITY_CAPTURE_FILE_FINGERPRINTS", "true")
+            if (termsOfUseUrl != null) envVars.put("DEVELOCITY_TERMS_OF_USE_URL", termsOfUseUrl)
+            if (termsOfUseAgree != null) envVars.put("DEVELOCITY_TERMS_OF_USE_AGREE", termsOfUseAgree)
             return envVars
         }
     }

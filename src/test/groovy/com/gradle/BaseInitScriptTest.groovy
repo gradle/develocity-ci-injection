@@ -90,9 +90,6 @@ abstract class BaseInitScriptTest extends Specification {
             // Only include valid Gradle/Plugin combinations
             dvPlugin.isCompatibleWith(gradleVersion)
         }
-        // TODO: FIX
-        //  Remove case that is currently failing due to a bug in the init-script
-        .findAll { gradleVersion, dvPlugin -> !(dvPlugin.id == 'com.gradle.build-scan' && dvPlugin.version in ['3.17', '3.18.1'])}
     }
 
     static final String PUBLIC_BUILD_SCAN_ID = 'i2wepy2gr7ovw'
@@ -211,6 +208,7 @@ abstract class BaseInitScriptTest extends Specification {
     }
 
     BuildResult run(List<String> args, TestGradleVersion testGradle, Map<String, String> envVars = [:]) {
+        println(envVars)
         def result = createRunner(args, testGradle.gradleVersion, envVars).build()
         assertNoDeprecationWarning(result)
         assertNoStackTraces(result)
@@ -257,6 +255,8 @@ abstract class BaseInitScriptTest extends Specification {
             DEVELOCITY_CCUD_PLUGIN_VERSION            : "develocity.ccud-plugin.version",
             DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: "develocity.build-scan.upload-in-background",
             DEVELOCITY_CAPTURE_FILE_FINGERPRINTS      : "develocity.capture-file-fingerprints",
+            DEVELOCITY_TERMS_OF_USE_URL               : "develocity.terms-of-use.url",
+            DEVELOCITY_TERMS_OF_USE_AGREE             : "develocity.terms-of-use.agree",
             GRADLE_PLUGIN_REPOSITORY_URL              : "gradle.plugin-repository.url",
             GRADLE_PLUGIN_REPOSITORY_USERNAME         : "gradle.plugin-repository.username",
             GRADLE_PLUGIN_REPOSITORY_PASSWORD         : "gradle.plugin-repository.password",

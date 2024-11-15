@@ -3,6 +3,8 @@ plugins {
     `jvm-test-suite`
 }
 
+group = "com.gradle"
+
 repositories {
     mavenCentral()
 }
@@ -39,4 +41,12 @@ tasks.register<Copy>("promote") {
         }
     }
     into("reference")
+}
+
+// Exposes the init script as a resolvable artifact when this project is used as
+// an included build.
+configurations.consumable("develocityInjectionScript") {
+    attributes.attribute(Category.CATEGORY_ATTRIBUTE, objects.named("develocity-injection-script"))
+    outgoing.artifact(tasks.named<ProcessResources>("processResources")
+        .map { it.destinationDir.resolve("develocity-injection.init.gradle") })
 }
