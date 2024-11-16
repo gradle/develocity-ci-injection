@@ -2,24 +2,46 @@ name: Send update PRs to all consumers
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        type: string
-        required: true
+  push:
+    branches:
+      - 'main'
+      - 'dd/**'
+    paths:
+      - 'reference/**'
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  update-gradle-actions:
-    needs: [update-reference]
-    uses: ./.github/workflows/gradle-send-update-pr.yml
-    with:
-      version: ${{ inputs.version }}
-      repository: 'gradle/actions'
-      script-location: 'sources/src/resources/init-scripts/gradle-actions.inject-develocity.init.gradle'
-    secrets: inherit
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: read-version
+        id: read-version
+        shell: bash
+        run: |
+          echo "version=`awk '/Version:/ {print $NF}' reference/develocity-injection.init.gradle`" >> "$GITHUB_OUTPUT"
+
+  print-version:
+    needs: [determine-version]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "version is ${{ needs.determine-version.outputs.version }}"
+
+#  update-gradle-actions:
+#    needs: [determine-version]
+#    uses: ./.github/workflows/gradle-send-update-pr.yml
+#    with:
+#      version: ${{ needs.determine-version.version }}
+#      repository: 'gradle/actions'
+#      script-location: 'sources/src/resources/init-scripts/gradle-actions.inject-develocity.init.gradle'
+#    secrets: inherit
 
 #  update-develocity-gitlab-templates:
 #    needs: [update-reference]
