@@ -1,0 +1,80 @@
+name: Send update PRs to all consumers
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-gradle-actions:
+    needs: [update-reference]
+    uses: ./.github/workflows/gradle-send-update-pr.yml
+    with:
+      version: ${{ inputs.version }}
+      repository: 'gradle/actions'
+      script-location: 'sources/src/resources/init-scripts/gradle-actions.inject-develocity.init.gradle'
+    secrets: inherit
+
+#  update-develocity-gitlab-templates:
+#    needs: [update-reference]
+#    uses: ./.github/workflows/gradle-send-update-pr.yml
+#    with:
+#      version: ${{ inputs.version }}
+#      repository: 'gradle/develocity-gitlab-templates'
+#      script-location: 'src/gradle/init-scripts/develocity-injection.init.gradle'
+#      post-process: './build.sh'
+#    secrets: inherit
+#
+#  update-develocity-bamboo-plugin:
+#    needs: [update-reference]
+#    uses: ./.github/workflows/gradle-send-update-pr.yml
+#    with:
+#      version: ${{ inputs.version }}
+#      repository: 'gradle/develocity-bamboo-plugin'
+#      script-location: 'src/main/resources/develocity/gradle/develocity-init-script.gradle'
+#      post-process: |
+#        sed -i "s/def ENV_VAR_PREFIX = ''/def ENV_VAR_PREFIX = 'bamboo_'/" src/main/resources/develocity/gradle/develocity-init-script.gradle
+#    secrets:
+#      GH_BOT_GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # bot-githubaction does not have write access
+#      GH_BOT_PGP_PRIVATE_KEY: ${{ secrets.GH_BOT_PGP_PRIVATE_KEY }}
+#      GH_BOT_PGP_PASSPHRASE: ${{ secrets.GH_BOT_PGP_PASSPHRASE }}
+#
+#  update-jenkins-gradle-plugin:
+#    needs: [update-reference]
+#    uses: ./.github/workflows/gradle-send-update-pr.yml
+#    with:
+#      version: ${{ inputs.version }}
+#      repository: 'jenkinsci/gradle-plugin'
+#      script-location: 'src/main/resources/hudson/plugins/gradle/injection/init-script.gradle'
+#    secrets:
+#      GH_BOT_GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # bot-githubaction does not have write access
+#      GH_BOT_PGP_PRIVATE_KEY: ${{ secrets.GH_BOT_PGP_PRIVATE_KEY }}
+#      GH_BOT_PGP_PASSPHRASE: ${{ secrets.GH_BOT_PGP_PASSPHRASE }}
+#
+#  update-develocity-teamcity-plugin:
+#    needs: [update-reference]
+#    uses: ./.github/workflows/gradle-send-update-pr.yml
+#    with:
+#      version: ${{ inputs.version }}
+#      repository: 'etiennestuder/teamcity-build-scan-plugin'
+#      script-location: 'agent/src/main/resources/init-scripts/develocity-injection.init.gradle'
+#    secrets:
+#      GH_BOT_GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # bot-githubaction does not have write access
+#      GH_BOT_PGP_PRIVATE_KEY: ${{ secrets.GH_BOT_PGP_PRIVATE_KEY }}
+#      GH_BOT_PGP_PASSPHRASE: ${{ secrets.GH_BOT_PGP_PASSPHRASE }}
+#
+#  update-develocity-build-validation-scripts:
+#    needs: [update-reference]
+#    uses: ./.github/workflows/gradle-send-update-pr.yml
+#    with:
+#      version: ${{ inputs.version }}
+#      repository: 'gradle/gradle-enterprise-build-validation-scripts'
+#      post-process: |
+#        sed -i 's/com\.gradle:develocity-injection:[^"]*/com.gradle:develocity-injection:${{ inputs.version }}/' build.gradle.kts
+#    secrets: inherit
