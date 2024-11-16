@@ -15,8 +15,9 @@ jobs:
         id: read-version
         shell: bash
         run: |
-          echo "version=`awk '/Version:/ {print $NF}' reference/develocity-injection.init.gradle`" >> "$GITHUB_OUTPUT"
-
+          INIT_SCRIPT_VERSION=$(awk '/Version:/ {print $NF}' reference/develocity-injection.init.gradle)
+          echo "version=$INIT_SCRIPT_VERSION" >> "$GITHUB_OUTPUT"
+          
   print-version:
     needs: [determine-version]
     runs-on: ubuntu-latest
