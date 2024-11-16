@@ -46,7 +46,7 @@ jobs:
           commit_message: '[bot] Promote init-script as ${{ inputs.version }}'
           tagging_message: '${{ inputs.version }}'
           branch: bot-release-${{ inputs.version }}
-          create-branch: true
+          create_branch: true
 
       # If there are no changes, this action will not create a pull request
       - name: Create pull request for release
