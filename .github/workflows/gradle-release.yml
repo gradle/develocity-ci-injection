@@ -2,61 +2,24 @@ name: Gradle initScript release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        type: string
-        required: true
 
 jobs:
-  update-reference:
-    permissions:
-      contents: write
-      pull-requests: write
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: read-version
+        id: read-version
+        shell: bash
+        run: |
+          echo "version=`awk '/Version:/ {print $NF}' reference/develocity-injection.init.gradle`" >> "$GITHUB_OUTPUT"
+
+  print-version:
+    needs: [determine-version]
     runs-on: ubuntu-latest
     steps:
-#      - name: Import GPG key
-#        uses: crazy-max/ghaction-import-gpg@v6
-#        with:
-#          gpg_private_key: ${{ secrets.GH_BOT_PGP_PRIVATE_KEY }}
-#          passphrase: ${{ secrets.GH_BOT_PGP_PASSPHRASE }}
-#          git_user_signingkey: true
-#          git_commit_gpgsign: true
-#          git_config_global: true
-
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          develocity-access-key: ${{ secrets.DV_SOLUTIONS_ACCESS_KEY }}
-
-      - name: Generate reference script with version
-        run: ./gradlew promote -Pversion=${{ inputs.version }}
-
-      - name: Commit & push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_author: bot-githubaction <bot-githubaction@gradle.com>
-          commit_user_name: bot-githubaction
-          commit_user_email: bot-githubaction@gradle.com
-          commit_message: '[bot] Promote init-script as ${{ inputs.version }}'
-          tagging_message: '${{ inputs.version }}'
-          push_options: '-n'
-
-      # If there are no changes, this action will not create a pull request
-      - name: Create pull request for release
-        uses: peter-evans/create-pull-request@v7
-        with:
-#          branch: bot-release-${{ inputs.version }}
-#          commit-message: [bot] PR Promote init-script as ${{ inputs.version }}
-          title: Promote init-script as ${{ inputs.version }}
-          # Note: Unfortunately this action cannot trigger the regular workflows for the PR automatically, see
-          # https://github.com/peter-evans/create-pull-request/blob/main/docs/concepts-guidelines.md#triggering-further-workflow-runs
-          # Therefore suggest below to close and then reopen the PR
-          body: |
-            Automatically generated pull request to promote `src/main/resources/develocity-injection.init.gradle` as 
-            reference version ${{ inputs.version }}.
+      - run: |
+          echo "version is ${{ needs.determine-version.outputs.version }}"
