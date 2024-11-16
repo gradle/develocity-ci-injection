@@ -45,8 +45,7 @@ jobs:
           commit_user_email: bot-githubaction@gradle.com
           commit_message: '[bot] Promote init-script as ${{ inputs.version }}'
           tagging_message: '${{ inputs.version }}'
-          branch: bot-release-${{ inputs.version }}
-          create_branch: true
+          push_options: '-n'
 
       # If there are no changes, this action will not create a pull request
       - name: Create pull request for release
