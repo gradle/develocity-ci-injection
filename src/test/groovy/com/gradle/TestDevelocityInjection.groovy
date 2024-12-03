@@ -333,6 +333,22 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can apply Develocity plugin using system properties via init script when org.gradle.jvmargs are defined"() {
+        given:
+        gradleProperties.text = 'org.gradle.jvmargs=-Dfile.encoding=UTF-8'
+        usingSystemProperties = true
+
+        when:
+        def result = run(testGradle, testConfig())
+
+        then:
+        outputContainsDevelocityPluginApplicationViaInitScript(result, testGradle.gradleVersion)
+
+        where:
+        testGradle << ALL_GRADLE_VERSIONS
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "init script is configuration cache compatible"() {
         when:
         def config = testConfig().withCCUDPlugin()

@@ -100,9 +100,11 @@ abstract class BaseInitScriptTest extends Specification {
 
     File settingsFile
     File buildFile
+    File gradleProperties
     File initScriptFile
 
     boolean allowDevelocityDeprecationWarning = false
+    boolean usingSystemProperties = false
 
     @TempDir
     File testProjectDir
@@ -181,9 +183,11 @@ abstract class BaseInitScriptTest extends Specification {
 
         settingsFile = new File(testProjectDir, 'settings.gradle')
         buildFile = new File(testProjectDir, 'build.gradle')
+        gradleProperties = new File(testProjectDir, 'gradle.properties')
 
         settingsFile << "rootProject.name = '${ROOT_PROJECT_NAME}'\n"
         buildFile << ''
+        gradleProperties << ''
     }
 
     void declareDvPluginApplication(TestGradleVersion testGradle, TestDvPluginVersion dvPlugin, String ccudPluginVersion = null, URI serverUri = mockScansServer.address) {
@@ -220,13 +224,12 @@ abstract class BaseInitScriptTest extends Specification {
         def runner = ((DefaultGradleRunner) GradleRunner.create())
             .withGradleVersion(gradleVersion.version)
             .withProjectDir(testProjectDir)
-            .withArguments(args)
             .forwardOutput()
 
-        if (testKitSupportsEnvVars(gradleVersion)) {
-            runner.withEnvironment(envVars)
+        if (testKitSupportsEnvVars(gradleVersion) && !usingSystemProperties) {
+            runner.withArguments(args).withEnvironment(envVars)
         } else {
-            (runner as DefaultGradleRunner).withJvmArguments(mapEnvVarsToSystemProps(envVars))
+            runner.withArguments(mapEnvVarsToSystemProps(envVars) + args)
         }
 
         runner
