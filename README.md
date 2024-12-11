@@ -13,7 +13,7 @@ An init-script that can be used by CI integrations to inject Develocity into a G
 - The repository includes a [set of integration tests](https://github.com/gradle/develocity-ci-injection/blob/main/src/test/groovy/com/gradle/TestDevelocityInjection.groovy) for different features of the init-script.
 - The `reference` directory contains the [latest _released_ version of the init-script](https://github.com/gradle/develocity-ci-injection/blob/main/reference/develocity-injection.init.gradle): this script has a version number embedded, and is designed to be re-used in other repositories.
 - When executed manually, the [gradle-release.yml workflow](https://github.com/gradle/develocity-ci-injection/actions/workflows/gradle-release.yml) will:
-  - Copy the latest script source into `reference`, applying the supplied version number
+  - Copy the latest script source into `reference`, applying the supplied version number. The version number should be formatted `vX.X[.x]`.
   - Tag the repository with the version number
   - Commit the new reference script to this repository
   - [Create PRs to update the script](https://github.com/gradle/develocity-ci-injection/actions/runs/9102707566/workflow#L48-L57) in various CI plugin repositories. [See here for an example run](https://github.com/gradle/develocity-ci-injection/actions/runs/9102707566) with links to generated PRs.
