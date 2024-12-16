@@ -100,7 +100,7 @@ jobs:
     uses: ./.github/workflows/gradle-send-update-pr.yml
     with:
       version: ${{ inputs.version }}
-      repository: 'gradle/gradle-enterprise-build-validation-scripts'
+      repository: 'gradle/develocity-build-validation-scripts'
       post-process: |
         sed -i 's/com\.gradle:develocity-injection:[^"]*/com.gradle:develocity-injection:${{ inputs.version }}/' build.gradle.kts
     secrets: inherit
