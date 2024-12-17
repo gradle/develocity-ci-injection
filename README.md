@@ -30,4 +30,4 @@ The following Develocity CI integrations leverage the Gradle init-script from th
 
 The following Develocity tooling also leverages this init-script.
 
-- [Develocity Build Validation Scripts](https://github.com/gradle/gradle-enterprise-build-validation-scripts)
+- [Develocity Build Validation Scripts](https://github.com/gradle/develocity-build-validation-scripts)
