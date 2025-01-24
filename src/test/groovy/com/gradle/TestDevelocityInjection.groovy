@@ -376,9 +376,13 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     void outputContainsBuildScanUrl(BuildResult result) {
-        def message = "Publishing build scan...\n${mockScansServer.address}s/$PUBLIC_BUILD_SCAN_ID"
+        def message = "Publishing build scan..."
+        def buildScanUrl = "${mockScansServer.address}s/$PUBLIC_BUILD_SCAN_ID"
         assert result.output.contains(message)
+        assert result.output.contains(buildScanUrl)
         assert 1 == result.output.count(message)
+        assert 1 == result.output.count(buildScanUrl)
+        assert result.output.indexOf(message) < result.output.indexOf(buildScanUrl)
     }
 
     void outputContainsDevelocityPluginApplicationViaInitScript(BuildResult result, GradleVersion gradleVersion, String pluginVersion = DEVELOCITY_PLUGIN_VERSION) {
