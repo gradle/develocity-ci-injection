@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
+        description: "Version with leading 'v' (eg v1.1.0)"
         type: string
         required: true
 
