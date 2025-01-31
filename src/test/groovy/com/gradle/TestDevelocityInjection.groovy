@@ -261,6 +261,48 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can configure uploadInBackground when Develocity plugin is applied by the init script"() {
+        when:
+        def result = run(testGradle, testConfig(testDvPlugin.version).withUploadInBackground(true))
+
+        then:
+        if (testGradle.gradleVersion < GRADLE_5) {
+            // Gradle 4.x and earlier will always inject build-scan-plugin 1.16 which doesn't have uploadInBackground
+            outputMissesUploadInBackground(result)
+        } else {
+            outputContainsUploadInBackground(result, true)
+        }
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForPluginInjection()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "can configure uploadInBackground when Develocity plugin already applied"() {
+        given:
+        declareDvPluginApplication(testGradle, testDvPlugin, null, mockScansServer.address)
+
+        when:
+        def result = run(testGradle, testConfig().withoutDevelocityPluginVersion())
+
+        then:
+        if (testDvPlugin.compatibleWithUploadInBackground) {
+            outputContainsUploadInBackground(result, true)
+        } else {
+            outputMissesUploadInBackground(result)
+        }
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        where:
+        [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin()
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "can configure alternative repository for plugins when Develocity plugin is applied by the init script"() {
         when:
         def config = testConfig().withPluginRepository(new URI('https://plugins.grdev.net/m2'))
@@ -470,6 +512,18 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         assert 1 == result.output.count(message)
     }
 
+    void outputContainsUploadInBackground(BuildResult result, boolean uploadInBackground) {
+        def message = "Setting uploadInBackground: $uploadInBackground"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
+    void outputMissesUploadInBackground(BuildResult result) {
+        def message = "Setting uploadInBackground:"
+        assert !result.output.contains(message)
+        assert 0 == result.output.count(message)
+    }
+
     private BuildResult run(TestGradleVersion testGradle, DvInjectionTestConfig config, List<String> args = ["help"]) {
         return run(args, testGradle, config.envVars)
     }
@@ -493,6 +547,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         boolean captureFileFingerprints = false
         String termsOfUseUrl = null
         String termsOfUseAgree = null
+        boolean uploadInBackground = true // Need to upload in background since our Mock server doesn't cope with foreground upload
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
@@ -537,13 +592,18 @@ class TestDevelocityInjection extends BaseInitScriptTest {
             return this
         }
 
+        DvInjectionTestConfig withUploadInBackground(boolean uploadInBackground) {
+            this.uploadInBackground = uploadInBackground
+            return this
+        }
+
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
                 DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity-injection.init.gradle",
                 DEVELOCITY_INJECTION_ENABLED              : "true",
                 DEVELOCITY_URL                            : serverUrl,
                 DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "true",
-                DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: "true", // Need to upload in background since our Mock server doesn't cope with foreground upload
+                DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: String.valueOf(uploadInBackground),
                 DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
             ]
             if (enforceUrl) envVars.put("DEVELOCITY_ENFORCE_URL", "true")
