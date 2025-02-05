@@ -368,6 +368,14 @@ abstract class BaseInitScriptTest extends Specification {
             return pluginId != BUILD_SCAN && pluginVersionAtLeast('3.16')
         }
 
+        boolean isCompatibleWithUploadInBackground() {
+            if (pluginId == BUILD_SCAN || pluginId == GRADLE_ENTERPRISE) {
+                // Only BS & GE plugins 3.3.4+ support uploadInBackground
+                return pluginVersionAtLeast('3.3.4')
+            }
+            return true
+        }
+
         String getConfigBlock(URI serverUri) {
             switch (pluginId) {
                 case DEVELOCITY:
