@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version with leading 'v' (eg v1.1.0)"
+        description: "Version without 'v' (eg '1.1' or '1.1.1')"
         type: string
         required: true
 
@@ -45,8 +45,8 @@ jobs:
           commit_author: bot-githubaction <bot-githubaction@gradle.com>
           commit_user_name: bot-githubaction
           commit_user_email: bot-githubaction@gradle.com
-          commit_message: '[bot] Promote init-script as ${{ inputs.version }}'
-          tagging_message: '${{ inputs.version }}'
+          commit_message: '[bot] Promote init-script as v${{ inputs.version }}'
+          tagging_message: 'v${{ inputs.version }}'
 
   update-gradle-actions:
     needs: [update-reference]
