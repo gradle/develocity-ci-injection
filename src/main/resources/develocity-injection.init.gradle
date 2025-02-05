@@ -153,6 +153,12 @@ void enableDevelocityInjection() {
         logger.lifecycle("Accepting Gradle Terms of Use: $buildScanTermsOfUseUrl")
     }
 
+    // finish early if DV plugin version is unsupported (v3.6.4 is the minimum version tested and supports back to DV 2021.1)
+    if (develocityPluginVersion && isNotAtLeast(develocityPluginVersion, '3.6.4')) {
+        logger.warn("Develocity Gradle plugin must be at least 3.6.4. Configured version is $develocityPluginVersion.")
+        return
+    }
+
     // finish early if configuration parameters passed in via system properties are not valid/supported
     if (ccudPluginVersion && isNotAtLeast(ccudPluginVersion, '1.7')) {
         logger.warn("Common Custom User Data Gradle plugin must be at least 1.7. Configured version is $ccudPluginVersion.")

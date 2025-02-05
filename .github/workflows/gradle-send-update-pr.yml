@@ -67,12 +67,12 @@ jobs:
           token: ${{ secrets.GH_BOT_GITHUB_TOKEN }}
           branch: bot/develocity-injection-init-script-update
           delete-branch: true
-          title: 'Update develocity-injection init script to ${{ inputs.version }}'
+          title: 'Update develocity-injection init script to v${{ inputs.version }}'
           body: |
             Updates the develocity-injection init script to the latest reference script content
             from https://github.com/gradle/develocity-ci-injection.
           commit-message: | 
-            Update develocity-injection init script to ${{ inputs.version }}
+            Update develocity-injection init script to v${{ inputs.version }}
 
             Updates the develocity-injection init script to the latest reference script content
             from https://github.com/gradle/develocity-ci-injection.
