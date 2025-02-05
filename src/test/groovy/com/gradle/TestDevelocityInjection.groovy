@@ -316,6 +316,21 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "stops gracefully when requested DV plugin version is < 3.6.4"() {
+        when:
+        def config = testConfig('3.6.3')
+        def result = run(testGradle, config)
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+        result.output.contains('Develocity Gradle plugin must be at least 3.6.4. Configured version is 3.6.3.')
+
+        where:
+        testGradle << ALL_GRADLE_VERSIONS
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "can configure Develocity via CCUD system property overrides when plugins are injected via init script"() {
         when:
         def config = testConfig().withCCUDPlugin().withServer(URI.create('https://develocity-server.invalid'))
