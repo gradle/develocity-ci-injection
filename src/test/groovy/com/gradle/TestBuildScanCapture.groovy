@@ -26,7 +26,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         captureBuildScanLinks()
 
         when:
-        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, testDvPlugin.version)
+        def config = testConfig(testDvPlugin.version)
         def result = run(['help'], testGradle, config.envVars)
 
         then:

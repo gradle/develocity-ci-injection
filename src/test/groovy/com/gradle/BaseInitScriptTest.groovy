@@ -218,6 +218,10 @@ abstract class BaseInitScriptTest extends Specification {
         assertNoStackTraces(result)
     }
 
+    BuildResult run(TestGradleVersion testGradle, DvInjectionTestConfig config, List<String> args = ["help"]) {
+        return run(args, testGradle, config.envVars)
+    }
+
     GradleRunner createRunner(List<String> args, GradleVersion gradleVersion = GradleVersion.current(), Map<String, String> envVars = [:]) {
         args << '-I' << initScriptFile.absolutePath
 
@@ -235,6 +239,10 @@ abstract class BaseInitScriptTest extends Specification {
         runner
     }
 
+    DvInjectionTestConfig testConfig(String develocityPluginVersion = DEVELOCITY_PLUGIN_VERSION) {
+        new DvInjectionTestConfig(mockScansServer.address, develocityPluginVersion.toString())
+    }
+
     private boolean testKitSupportsEnvVars(GradleVersion gradleVersion) {
         // TestKit supports env vars for Gradle 3.5+, except on M1 Mac where only 6.9+ is supported
         def isM1Mac = System.getProperty("os.arch") == "aarch64"
@@ -250,6 +258,7 @@ abstract class BaseInitScriptTest extends Specification {
         def mapping = [
             DEVELOCITY_INJECTION_ENABLED              : "develocity.injection-enabled",
             DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity.injection.init-script-name",
+            DEVELOCITY_INJECTION_LOGGING_ENABLED      : "develocity.injection.logging-enabled",
             DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : "develocity.auto-injection.custom-value",
             DEVELOCITY_URL                            : "develocity.url",
             DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "develocity.allow-untrusted-server",
@@ -282,6 +291,196 @@ abstract class BaseInitScriptTest extends Specification {
     BuildResult assertNoStackTraces(BuildResult result) {
         assert !result.output.contains("Exception:")
         return result
+    }
+
+    void outputContainsBuildScanUrl(BuildResult result) {
+        def message = "Publishing build scan..."
+        def buildScanUrl = "${mockScansServer.address}s/$PUBLIC_BUILD_SCAN_ID"
+        assert result.output.contains(message)
+        assert result.output.contains(buildScanUrl)
+        assert 1 == result.output.count(message)
+        assert 1 == result.output.count(buildScanUrl)
+        assert result.output.indexOf(message) < result.output.indexOf(buildScanUrl)
+    }
+
+    void outputContainsDevelocityPluginApplicationViaInitScript(BuildResult result, GradleVersion gradleVersion, String pluginVersion = DEVELOCITY_PLUGIN_VERSION) {
+        def pluginApplicationLogMsgGradle4 = "Applying com.gradle.scan.plugin.BuildScanPlugin with version 1.16 via init script"
+        def pluginApplicationLogMsgBuildScanPlugin = "Applying com.gradle.scan.plugin.BuildScanPlugin with version ${pluginVersion} via init script"
+        def pluginApplicationLogMsgGEPlugin = "Applying com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin with version ${pluginVersion} via init script"
+        def pluginApplicationLogMsgDVPlugin = "Applying com.gradle.develocity.agent.gradle.DevelocityPlugin with version ${pluginVersion} via init script"
+
+        def isGEPluginVersion = GradleVersion.version(pluginVersion) < GradleVersion.version("3.17")
+
+        if (gradleVersion < GRADLE_5) {
+            assert result.output.contains(pluginApplicationLogMsgGradle4)
+            assert 1 == result.output.count(pluginApplicationLogMsgGradle4)
+            assert !result.output.contains(pluginApplicationLogMsgGEPlugin)
+            assert !result.output.contains(pluginApplicationLogMsgDVPlugin)
+        } else if (gradleVersion < GRADLE_6 && isGEPluginVersion) {
+            assert result.output.contains(pluginApplicationLogMsgBuildScanPlugin)
+            assert 1 == result.output.count(pluginApplicationLogMsgBuildScanPlugin)
+            assert !result.output.contains(pluginApplicationLogMsgGEPlugin)
+            assert !result.output.contains(pluginApplicationLogMsgDVPlugin)
+        } else if (isGEPluginVersion) {
+            assert result.output.contains(pluginApplicationLogMsgGEPlugin)
+            assert 1 == result.output.count(pluginApplicationLogMsgGEPlugin)
+            assert !result.output.contains(pluginApplicationLogMsgGradle4)
+            assert !result.output.contains(pluginApplicationLogMsgDVPlugin)
+        } else {
+            assert result.output.contains(pluginApplicationLogMsgDVPlugin)
+            assert 1 == result.output.count(pluginApplicationLogMsgDVPlugin)
+            assert !result.output.contains(pluginApplicationLogMsgGradle4)
+            assert !result.output.contains(pluginApplicationLogMsgGEPlugin)
+        }
+    }
+
+    void outputMissesDevelocityPluginApplicationViaInitScript(BuildResult result) {
+        def pluginApplicationLogMsgGradle4 = "Applying com.gradle.scan.plugin.BuildScanPlugin"
+        def pluginApplicationLogMsgGradle5AndHigher = "Applying com.gradle.develocity.agent.gradle.DevelocityPlugin"
+        assert !result.output.contains(pluginApplicationLogMsgGradle4)
+        assert !result.output.contains(pluginApplicationLogMsgGradle5AndHigher)
+    }
+
+    void outputContainsCcudPluginApplicationViaInitScript(BuildResult result, String ccudPluginVersion = CCUD_PLUGIN_VERSION) {
+        def pluginApplicationLogMsg = "Applying com.gradle.CommonCustomUserDataGradlePlugin with version ${ccudPluginVersion} via init script"
+        assert result.output.contains(pluginApplicationLogMsg)
+        assert 1 == result.output.count(pluginApplicationLogMsg)
+    }
+
+    void outputMissesCcudPluginApplicationViaInitScript(BuildResult result) {
+        def pluginApplicationLogMsg = "Applying com.gradle.CommonCustomUserDataGradlePlugin"
+        assert !result.output.contains(pluginApplicationLogMsg)
+    }
+
+    void outputContainsDevelocityConnectionInfo(BuildResult result, String develocityUrl, boolean develocityAllowUntrustedServer) {
+        def develocityConnectionInfo = "Connection to Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer"
+        assert result.output.contains(develocityConnectionInfo)
+        assert 1 == result.output.count(develocityConnectionInfo)
+    }
+
+    void outputCaptureFileFingerprints(BuildResult result, boolean captureFileFingerprints) {
+        def captureFileFingerprintsInfo = "Setting captureFileFingerprints: $captureFileFingerprints"
+        assert result.output.contains(captureFileFingerprintsInfo)
+        assert 1 == result.output.count(captureFileFingerprintsInfo)
+    }
+
+    void outputContainsPluginRepositoryInfo(BuildResult result, String gradlePluginRepositoryUrl, boolean withCredentials = false) {
+        def repositoryInfo = "Develocity plugins resolution: ${gradlePluginRepositoryUrl}"
+        assert result.output.contains(repositoryInfo)
+        assert 1 == result.output.count(repositoryInfo)
+
+        if (withCredentials) {
+            def credentialsInfo = "Using credentials for plugin repository"
+            assert result.output.contains(credentialsInfo)
+            assert 1 == result.output.count(credentialsInfo)
+        }
+    }
+
+    void outputEnforcesDevelocityUrl(BuildResult result, String develocityUrl, boolean develocityAllowUntrustedServer) {
+        def enforceUrl = "Enforcing Develocity: $develocityUrl, allowUntrustedServer: $develocityAllowUntrustedServer"
+        assert result.output.contains(enforceUrl)
+        assert 1 == result.output.count(enforceUrl)
+    }
+
+    void outputContainsAcceptingGradleTermsOfUse(BuildResult result) {
+        def message = "Accepting Gradle Terms of Use: https://gradle.com/help/legal-terms-of-use"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
+    void outputContainsUploadInBackground(BuildResult result, boolean uploadInBackground) {
+        def message = "Setting uploadInBackground: $uploadInBackground"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
+    void outputMissesUploadInBackground(BuildResult result) {
+        def message = "Setting uploadInBackground:"
+        assert !result.output.contains(message)
+        assert 0 == result.output.count(message)
+    }
+
+    static class DvInjectionTestConfig {
+        String serverUrl
+        boolean enforceUrl = false
+        String develocityPluginVersion = null
+        String ccudPluginVersion = null
+        String pluginRepositoryUrl = null
+        String pluginRepositoryUsername = null
+        String pluginRepositoryPassword = null
+        boolean captureFileFingerprints = false
+        String termsOfUseUrl = null
+        String termsOfUseAgree = null
+        boolean uploadInBackground = true // Need to upload in background since our Mock server doesn't cope with foreground upload
+
+        DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
+            this.serverUrl = serverAddress.toString()
+            this.develocityPluginVersion = develocityPluginVersion
+        }
+
+        DvInjectionTestConfig withoutDevelocityPluginVersion() {
+            develocityPluginVersion = null
+            return this
+        }
+
+        DvInjectionTestConfig withCCUDPlugin(String version = CCUD_PLUGIN_VERSION) {
+            ccudPluginVersion = version
+            return this
+        }
+
+        DvInjectionTestConfig withServer(URI url, boolean enforceUrl = false) {
+            serverUrl = url.toASCIIString()
+            this.enforceUrl = enforceUrl
+            return this
+        }
+
+        DvInjectionTestConfig withPluginRepository(URI pluginRepositoryUrl) {
+            this.pluginRepositoryUrl = pluginRepositoryUrl
+            return this
+        }
+
+        DvInjectionTestConfig withCaptureFileFingerprints() {
+            this.captureFileFingerprints = true
+            return this
+        }
+
+        DvInjectionTestConfig withPluginRepositoryCredentials(String pluginRepoUsername, String pluginRepoPassword) {
+            this.pluginRepositoryUsername = pluginRepoUsername
+            this.pluginRepositoryPassword = pluginRepoPassword
+            return this
+        }
+
+        DvInjectionTestConfig withAcceptGradleTermsOfUse() {
+            this.termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+            this.termsOfUseAgree = "yes"
+            return this
+        }
+
+        DvInjectionTestConfig withUploadInBackground(boolean uploadInBackground) {
+            this.uploadInBackground = uploadInBackground
+            return this
+        }
+
+        Map<String, String> getEnvVars() {
+            Map<String, String> envVars = [
+                    DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity-injection.init.gradle",
+                    DEVELOCITY_INJECTION_ENABLED              : "true",
+                    DEVELOCITY_URL                            : serverUrl,
+                    DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "true",
+                    DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: String.valueOf(uploadInBackground),
+                    DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
+            ]
+            if (enforceUrl) envVars.put("DEVELOCITY_ENFORCE_URL", "true")
+            if (develocityPluginVersion != null) envVars.put("DEVELOCITY_PLUGIN_VERSION", develocityPluginVersion)
+            if (ccudPluginVersion != null) envVars.put("DEVELOCITY_CCUD_PLUGIN_VERSION", ccudPluginVersion)
+            if (pluginRepositoryUrl != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_URL", pluginRepositoryUrl)
+            if (pluginRepositoryUsername != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
+            if (pluginRepositoryPassword != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
+            if (captureFileFingerprints) envVars.put("DEVELOCITY_CAPTURE_FILE_FINGERPRINTS", "true")
+            if (termsOfUseUrl != null) envVars.put("DEVELOCITY_TERMS_OF_USE_URL", termsOfUseUrl)
+            if (termsOfUseAgree != null) envVars.put("DEVELOCITY_TERMS_OF_USE_AGREE", termsOfUseAgree)
+            return envVars
+        }
     }
 
     static final class TestGradleVersion {
