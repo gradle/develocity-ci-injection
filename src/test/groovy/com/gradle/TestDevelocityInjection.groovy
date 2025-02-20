@@ -6,6 +6,23 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     static final List<TestGradleVersion> CCUD_COMPATIBLE_GRADLE_VERSIONS = ALL_GRADLE_VERSIONS - [GRADLE_3_X]
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "does not inject when init script name doesn't match and injection is enabled"() {
+        when:
+        def result = run(testGradle, testConfig().withInjectionEnabled(true).withInitScriptName("foo.gradle").withCCUDPlugin())
+
+        then:
+        result.output.contains("Develocity injection not enabled because requested init script name was 'foo.gradle', but 'develocity-injection.init.gradle' was expected")
+
+        and:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+        outputMissesBuildScanUrl(result)
+
+        where:
+        testGradle << ALL_GRADLE_VERSIONS
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "does not apply Develocity plugins when not requested"() {
         when:
         def result = run([], testGradle)

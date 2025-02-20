@@ -303,6 +303,11 @@ abstract class BaseInitScriptTest extends Specification {
         assert result.output.indexOf(message) < result.output.indexOf(buildScanUrl)
     }
 
+    void outputMissesBuildScanUrl(BuildResult result) {
+        def message = "Publishing build scan..."
+        assert !result.output.contains(message)
+    }
+
     void outputContainsDevelocityPluginApplicationViaInitScript(BuildResult result, GradleVersion gradleVersion, String pluginVersion = DEVELOCITY_PLUGIN_VERSION) {
         def pluginApplicationLogMsgGradle4 = "Applying com.gradle.scan.plugin.BuildScanPlugin with version 1.16 via init script"
         def pluginApplicationLogMsgBuildScanPlugin = "Applying com.gradle.scan.plugin.BuildScanPlugin with version ${pluginVersion} via init script"
@@ -401,6 +406,10 @@ abstract class BaseInitScriptTest extends Specification {
     }
 
     static class DvInjectionTestConfig {
+        String initScriptName = "develocity-injection.init.gradle"
+        boolean injectionEnabled = true
+        boolean debug = true
+
         String serverUrl
         boolean enforceUrl = false
         String develocityPluginVersion = null
@@ -412,11 +421,25 @@ abstract class BaseInitScriptTest extends Specification {
         String termsOfUseUrl = null
         String termsOfUseAgree = null
         boolean uploadInBackground = true // Need to upload in background since our Mock server doesn't cope with foreground upload
-        boolean debug = true
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
             this.develocityPluginVersion = develocityPluginVersion
+        }
+
+        DvInjectionTestConfig withInitScriptName(String initScriptName) {
+            this.initScriptName = initScriptName
+            return this
+        }
+
+        DvInjectionTestConfig withInjectionEnabled(boolean injectionEnabled) {
+            this.injectionEnabled = injectionEnabled
+            return this
+        }
+
+        DvInjectionTestConfig withDebug(boolean debug) {
+            this.debug = debug
+            return this
         }
 
         DvInjectionTestConfig withoutDevelocityPluginVersion() {
@@ -462,21 +485,16 @@ abstract class BaseInitScriptTest extends Specification {
             return this
         }
 
-        DvInjectionTestConfig withDebug(boolean debug) {
-            this.debug = debug
-            return this
-        }
-
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
-                DEVELOCITY_INJECTION_INIT_SCRIPT_NAME     : "develocity-injection.init.gradle",
-                DEVELOCITY_INJECTION_ENABLED              : "true",
+                DEVELOCITY_INJECTION_ENABLED              : String.valueOf(injectionEnabled),
                 DEVELOCITY_INJECTION_DEBUG                : String.valueOf(debug),
                 DEVELOCITY_URL                            : serverUrl,
                 DEVELOCITY_ALLOW_UNTRUSTED_SERVER         : "true",
                 DEVELOCITY_BUILD_SCAN_UPLOAD_IN_BACKGROUND: String.valueOf(uploadInBackground),
                 DEVELOCITY_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
             ]
+            if (initScriptName) envVars.put("DEVELOCITY_INJECTION_INIT_SCRIPT_NAME", initScriptName)
             if (enforceUrl) envVars.put("DEVELOCITY_ENFORCE_URL", "true")
             if (develocityPluginVersion != null) envVars.put("DEVELOCITY_PLUGIN_VERSION", develocityPluginVersion)
             if (ccudPluginVersion != null) envVars.put("DEVELOCITY_CCUD_PLUGIN_VERSION", ccudPluginVersion)

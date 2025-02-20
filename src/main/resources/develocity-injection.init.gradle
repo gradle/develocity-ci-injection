@@ -91,16 +91,15 @@ if (!isTopLevelBuild) {
     return
 }
 
-def logLevel = Boolean.parseBoolean(getInputParam(gradle, 'develocity.injection.debug')) ? LogLevel.LIFECYCLE : LogLevel.INFO
 def requestedInitScriptName = getInputParam(gradle, 'develocity.injection.init-script-name')
 def initScriptName = buildscript.sourceFile.name
-if (requestedInitScriptName != initScriptName) {
-    logger.log(logLevel, "Ignoring init script '${initScriptName}' as requested name '${requestedInitScriptName}' does not match")
-    return
-}
 
 def develocityInjectionEnabled = Boolean.parseBoolean(getInputParam(gradle, "develocity.injection-enabled"))
 if (develocityInjectionEnabled) {
+    if (requestedInitScriptName != initScriptName) {
+        logger.log(LogLevel.WARN, "Develocity injection not enabled because requested init script name was '${requestedInitScriptName}', but '${initScriptName}' was expected")
+        return
+    }
     enableDevelocityInjection()
 }
 
@@ -108,6 +107,10 @@ if (develocityInjectionEnabled) {
 def buildScanCollector = new BuildScanCollector()
 def buildScanCaptureEnabled = buildScanCollector.metaClass.respondsTo(buildScanCollector, 'captureBuildScanLink', String)
 if (buildScanCaptureEnabled) {
+    if (requestedInitScriptName != initScriptName) {
+        logger.log(LogLevel.WARN, "Build Scan capture not enabled because requested init script name was '${requestedInitScriptName}', but '${initScriptName}' was expected")
+        return
+    }
     enableBuildScanLinkCapture(buildScanCollector)
 }
 
