@@ -6,6 +6,22 @@ import spock.lang.Requires
 class TestBuildScanCapture extends BaseInitScriptTest {
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "does not capture build scan url when init script name doesn't match and capture is enabled"() {
+        given:
+        captureBuildScanLinks()
+
+        when:
+        def result = run(testGradle, testConfig().withInjectionEnabled(false).withInitScriptName("foo.gradle"))
+
+        then:
+        result.output.contains("Build Scan capture not enabled because requested init script name was 'foo.gradle', but 'develocity-injection.init.gradle' was expected")
+        buildScanUrlIsNotCaptured(result)
+
+        where:
+        testGradle << ALL_GRADLE_VERSIONS
+    }
+
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "does not capture build scan url when init-script not enabled"() {
         given:
         captureBuildScanLinks()
@@ -26,7 +42,7 @@ class TestBuildScanCapture extends BaseInitScriptTest {
         captureBuildScanLinks()
 
         when:
-        def config = TestDevelocityInjection.createTestConfig(mockScansServer.address, testDvPlugin.version)
+        def config = testConfig(testDvPlugin.version)
         def result = run(['help'], testGradle, config.envVars)
 
         then:
