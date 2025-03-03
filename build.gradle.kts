@@ -25,7 +25,7 @@ testing {
                 implementation("io.ratpack:ratpack-groovy-test:1.9.0") {
                     exclude(group = "org.codehaus.groovy", module = "groovy-all")
                 }
-                implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.2")
+                implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.3")
             }
         }
     }
