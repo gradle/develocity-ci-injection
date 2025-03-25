@@ -111,15 +111,14 @@ class TestDevelocityInjection extends BaseInitScriptTest {
 
     def "applies CCUD plugin via init script with DV plugin already applied using develocity.buildCache"() {
         given:
-        declareDvPluginApplication(gradleVersion, testDvPlugin)
+        declareDvPluginApplication(testGradle, testDvPlugin)
         settingsFile << """
-buildCache {
-    remote(${buildCacheExtension}.buildCache)
-}
-"""
+            buildCache {
+                remote(${buildCacheExtension}.buildCache)
+            }
+        """
         when:
-        def config = testConfig().withCCUDPlugin(CCUD_PLUGIN_VERSION)
-        def result = run(GRADLE_8_X, config)
+        def result = run(testGradle, testConfig().withCCUDPlugin(CCUD_PLUGIN_VERSION))
 
         then:
         outputMissesDevelocityPluginApplicationViaInitScript(result)
@@ -129,10 +128,10 @@ buildCache {
         outputContainsBuildScanUrl(result)
 
         where:
-        gradleVersion | buildCacheExtension | testDvPlugin
-        GRADLE_8_X    | "develocity"        | dvPlugin(DvPluginId.DEVELOCITY, DEVELOCITY_PLUGIN_VERSION)
-        GRADLE_8_X    | "gradleEnterprise"  | dvPlugin(DvPluginId.GRADLE_ENTERPRISE, DEVELOCITY_PLUGIN_VERSION, true)
-        GRADLE_8_X    | "gradleEnterprise"  | dvPlugin(DvPluginId.GRADLE_ENTERPRISE, "3.16.2")
+        testGradle | buildCacheExtension | testDvPlugin
+        GRADLE_8_X | "develocity"        | dvPlugin(DvPluginId.DEVELOCITY, DEVELOCITY_PLUGIN_VERSION)
+        GRADLE_8_X | "gradleEnterprise"  | dvPlugin(DvPluginId.GRADLE_ENTERPRISE, DEVELOCITY_PLUGIN_VERSION, true)
+        GRADLE_8_X | "gradleEnterprise"  | dvPlugin(DvPluginId.GRADLE_ENTERPRISE, "3.16.2")
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})
