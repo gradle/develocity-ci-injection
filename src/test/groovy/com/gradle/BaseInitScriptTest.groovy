@@ -73,6 +73,7 @@ abstract class BaseInitScriptTest extends Specification {
         [
             gradleVersions,
             [
+                dvPlugin(DEVELOCITY, '4.0-rc-1'), // Unreleased
                 dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION), // Latest Develocity plugin
                 dvPlugin(DEVELOCITY, '3.17'), // First Develocity plugin
                 dvPlugin(GRADLE_ENTERPRISE, '3.16.2'), // Last version before switch to Develocity
