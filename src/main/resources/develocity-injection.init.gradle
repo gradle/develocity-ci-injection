@@ -58,6 +58,10 @@ initscript {
                     }
                 }
             }
+            // Include repo for develocity plugin version 4.0-rc-1
+            maven {
+                url = "https://repo.grdev.net/artifactory/enterprise-libs-release-candidates-local"
+            }
         }
     }
 
