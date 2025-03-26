@@ -149,6 +149,23 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         outputContainsBuildScanUrl(result)
     }
 
+    def "applies CCUD plugin via init script with latest DV plugin injected and older GE plugin already applied"() {
+        given:
+        // Project applies older GE plugin
+        declareDvPluginApplication(GRADLE_8_X, dvPlugin(DvPluginId.GRADLE_ENTERPRISE, "3.16.2"))
+
+        when:
+        def config = testConfig("4.0-rc-1").withCCUDPlugin(CCUD_PLUGIN_VERSION)
+        def result = run(GRADLE_8_X, config, ["help", "-s"])
+
+        then:
+        outputMissesDevelocityPluginApplicationViaInitScript(result)
+        outputContainsCcudPluginApplicationViaInitScript(result, CCUD_PLUGIN_VERSION)
+
+        and:
+        outputContainsBuildScanUrl(result)
+    }
+
     @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "does not override CCUD plugin when already defined in project"() {
         given:
