@@ -73,12 +73,11 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "applies Develocity and CCUD plugins via init script when not defined in project"() {
         when:
-        def ccudPluginVersion = testDvPlugin.compatibleCCUDVersion
-        def result = run(testGradle, testConfig(testDvPlugin.version).withCCUDPlugin(ccudPluginVersion))
+        def result = run(testGradle, testConfig(testDvPlugin.version).withCCUDPlugin(CCUD_PLUGIN_VERSION))
 
         then:
         outputContainsDevelocityPluginApplicationViaInitScript(result, testGradle.gradleVersion, testDvPlugin.version)
-        outputContainsCcudPluginApplicationViaInitScript(result, ccudPluginVersion)
+        outputContainsCcudPluginApplicationViaInitScript(result, CCUD_PLUGIN_VERSION)
 
         and:
         outputContainsBuildScanUrl(result)
@@ -93,12 +92,11 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         declareDvPluginApplication(testGradle, testDvPlugin)
 
         when:
-        def ccudPluginVersion = testDvPlugin.compatibleCCUDVersion
-        def result = run(testGradle, testConfig().withCCUDPlugin(ccudPluginVersion))
+        def result = run(testGradle, testConfig().withCCUDPlugin(CCUD_PLUGIN_VERSION))
 
         then:
         outputMissesDevelocityPluginApplicationViaInitScript(result)
-        outputContainsCcudPluginApplicationViaInitScript(result, ccudPluginVersion)
+        outputContainsCcudPluginApplicationViaInitScript(result, CCUD_PLUGIN_VERSION)
 
         and:
         outputContainsBuildScanUrl(result)
@@ -106,7 +104,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         where:
         [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin(CCUD_COMPATIBLE_GRADLE_VERSIONS)
         // Ignore test for old versions of plugin where no CCUD works.
-            .findAll {testGradle, testDvPlugin -> testDvPlugin.compatibleCCUDVersion != null}
+            .findAll {testGradle, testDvPlugin -> testDvPlugin.compatibleWithCCUD}
     }
 
     def "applies CCUD plugin via init script with DV plugin already applied using develocity.buildCache"() {
@@ -154,7 +152,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
     @Requires({data.testGradle.compatibleWithCurrentJvm})
     def "does not override CCUD plugin when already defined in project"() {
         given:
-        declareDvPluginApplication(testGradle, testDvPlugin, testDvPlugin.compatibleCCUDVersion)
+        declareDvPluginApplication(testGradle, testDvPlugin, CCUD_PLUGIN_VERSION)
 
         when:
         def result = run(testGradle, testConfig().withCCUDPlugin(CCUD_PLUGIN_VERSION))
@@ -169,7 +167,7 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         where:
         [testGradle, testDvPlugin] << getVersionsToTestForExistingDvPlugin(CCUD_COMPATIBLE_GRADLE_VERSIONS)
         // Ignore test for old versions of plugin where no CCUD works.
-            .findAll {testGradle, testDvPlugin -> testDvPlugin.compatibleCCUDVersion != null}
+            .findAll {testGradle, testDvPlugin -> testDvPlugin.compatibleWithCCUD}
     }
 
     @Requires({data.testGradle.compatibleWithCurrentJvm})

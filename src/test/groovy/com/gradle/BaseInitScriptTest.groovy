@@ -636,18 +636,11 @@ abstract class BaseInitScriptTest extends Specification {
             }
         }
 
-        String getCompatibleCCUDVersion() {
-            if (pluginVersionAtLeast('3.11')) {
-                return CCUD_PLUGIN_VERSION
+        boolean isCompatibleWithCCUD() {
+            if (pluginId == BUILD_SCAN) {
+                return version == '1.16'
             }
-            if (pluginId == BUILD_SCAN && version == '1.16') {
-                return CCUD_PLUGIN_VERSION
-            }
-            if (pluginVersionAtLeast('3.6')) {
-                return '1.13'
-            }
-            // No known compatible CCUD for older plugin versions
-            return null
+            return pluginVersionAtLeast('3.2')
         }
 
         private boolean pluginVersionAtLeast(String targetVersion) {
