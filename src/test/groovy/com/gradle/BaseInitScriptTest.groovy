@@ -22,15 +22,15 @@ abstract class BaseInitScriptTest extends Specification {
     static final GradleVersion GRADLE_6 = GradleVersion.version('6.0')
 
     static final String DEVELOCITY_PLUGIN_VERSION = '3.19.2'
-    static final String CCUD_PLUGIN_VERSION = '2.1'
+    static final String CCUD_PLUGIN_VERSION = '2.2.1'
 
     static final TestGradleVersion GRADLE_3_X = new TestGradleVersion(GradleVersion.version('3.5.1'), 7, 9)
     static final TestGradleVersion GRADLE_4_X = new TestGradleVersion(GradleVersion.version('4.10.3'), 7, 10)
     static final TestGradleVersion GRADLE_5_X = new TestGradleVersion(GradleVersion.version('5.6.4'), 8, 12)
     static final TestGradleVersion GRADLE_6_X = new TestGradleVersion(GradleVersion.version('6.9.4'), 8, 15)
-    static final TestGradleVersion GRADLE_7_X = new TestGradleVersion(GradleVersion.version('7.6.2'), 8, 19)
+    static final TestGradleVersion GRADLE_7_X = new TestGradleVersion(GradleVersion.version('7.6.4'), 8, 19)
     static final TestGradleVersion GRADLE_8_0 = new TestGradleVersion(GradleVersion.version('8.0.2'), 8, 19)
-    static final TestGradleVersion GRADLE_8_X = new TestGradleVersion(GradleVersion.version('8.7'), 8, 21)
+    static final TestGradleVersion GRADLE_8_X = new TestGradleVersion(GradleVersion.version('8.13'), 8, 21)
 
     static final List<TestGradleVersion> ALL_GRADLE_VERSIONS = [
         GRADLE_3_X, // First version where TestKit supports environment variables
@@ -636,18 +636,11 @@ abstract class BaseInitScriptTest extends Specification {
             }
         }
 
-        String getCompatibleCCUDVersion() {
-            if (pluginVersionAtLeast('3.11')) {
-                return CCUD_PLUGIN_VERSION
+        boolean isCompatibleWithCCUD() {
+            if (pluginId == BUILD_SCAN) {
+                return version == '1.16'
             }
-            if (pluginId == BUILD_SCAN && version == '1.16') {
-                return CCUD_PLUGIN_VERSION
-            }
-            if (pluginVersionAtLeast('3.6')) {
-                return '1.13'
-            }
-            // No known compatible CCUD for older plugin versions
-            return null
+            return pluginVersionAtLeast('3.2')
         }
 
         private boolean pluginVersionAtLeast(String targetVersion) {
