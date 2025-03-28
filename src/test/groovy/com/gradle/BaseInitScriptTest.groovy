@@ -46,6 +46,7 @@ abstract class BaseInitScriptTest extends Specification {
         [GRADLE_7_X, GRADLE_8_0, GRADLE_8_X].intersect(ALL_GRADLE_VERSIONS)
 
     static final List<TestDvPluginVersion> DV_PLUGIN_VERSIONS = [
+        dvPlugin(DEVELOCITY, '4.0-rc-2'),
         dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION),
         dvPlugin(DEVELOCITY, '3.17'),
 
@@ -73,7 +74,7 @@ abstract class BaseInitScriptTest extends Specification {
         [
             gradleVersions,
             [
-                dvPlugin(DEVELOCITY, '4.0-rc-1'), // Unreleased
+                dvPlugin(DEVELOCITY, '4.0-rc-2'), // Unreleased
                 dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION), // Latest Develocity plugin
                 dvPlugin(DEVELOCITY, '3.17'), // First Develocity plugin
                 dvPlugin(GRADLE_ENTERPRISE, '3.16.2'), // Last version before switch to Develocity
@@ -195,10 +196,22 @@ abstract class BaseInitScriptTest extends Specification {
         if (dvPlugin.deprecated) {
             allowDevelocityDeprecationWarning = true
         }
+        def pluginManagement = """
+            pluginManagement {
+                repositories {
+                    gradlePluginPortal()
+                    // Include repo for develocity plugin version 4.0-rc
+                    maven {
+                        url = "https://repo.grdev.net/artifactory/enterprise-libs-release-candidates-local"
+                    }
+                }
+            }
+        """
         if (testGradle.gradleVersion < GRADLE_6) {
+            settingsFile.text = pluginManagement
             buildFile.text = configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
         } else {
-            settingsFile.text = configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
+            settingsFile.text = pluginManagement + configuredPlugin(dvPlugin, ccudPluginVersion, serverUri)
         }
     }
 
