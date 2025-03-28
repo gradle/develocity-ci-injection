@@ -27,6 +27,15 @@ testing {
                 }
                 implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.3")
             }
+            targets {
+                all {
+                    testTask.configure {
+                        setMaxHeapSize("512m")
+                        setJvmArgs(listOf("-XX:MaxMetaspaceSize=512m"))
+                    }
+                }
+            }
+
         }
     }
 }
