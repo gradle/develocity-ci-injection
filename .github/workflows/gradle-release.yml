@@ -92,7 +92,7 @@ jobs:
     uses: ./.github/workflows/gradle-send-update-pr.yml
     with:
       version: ${{ inputs.version }}
-      repository: 'etiennestuder/teamcity-build-scan-plugin'
+      repository: 'gradle/develocity-teamcity-plugin'
       script-location: 'agent/src/main/resources/init-scripts/develocity-injection.init.gradle'
     secrets: inherit
 
