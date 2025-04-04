@@ -130,13 +130,13 @@ void enableDevelocityInjection() {
     def develocityUrl = getInputParam(gradle, 'develocity-injection.url')
     def develocityAllowUntrustedServer = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.allow-untrusted-server'))
     def develocityEnforceUrl = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.enforce-url'))
-    def buildScanUploadInBackground = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.build-scan.upload-in-background'))
+    def buildScanUploadInBackground = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.upload-in-background'))
     def develocityCaptureFileFingerprints = getInputParam(gradle, 'develocity-injection.capture-file-fingerprints') ? Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.capture-file-fingerprints')) : true
     def develocityPluginVersion = getInputParam(gradle, 'develocity-injection.plugin.version')
     def ccudPluginVersion = getInputParam(gradle, 'develocity-injection.ccud-plugin.version')
     def buildScanTermsOfUseUrl = getInputParam(gradle, 'develocity-injection.terms-of-use.url')
     def buildScanTermsOfUseAgree = getInputParam(gradle, 'develocity-injection.terms-of-use.agree')
-    def ciAutoInjectionCustomValueValue = getInputParam(gradle, 'develocity-injection.auto-injection-custom-value')
+    def ciAutoInjectionCustomValueValue = getInputParam(gradle, 'develocity-injection.custom-value')
     def logLevel = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.debug')) ? LogLevel.LIFECYCLE : LogLevel.INFO
 
     def atLeastGradle5 = GradleVersion.current() >= GradleVersion.version('5.0')
