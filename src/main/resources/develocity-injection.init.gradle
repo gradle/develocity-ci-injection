@@ -375,8 +375,8 @@ void applyPluginExternally(def pluginManager, String pluginClassName, String plu
     def logLevel = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.debug')) ? LogLevel.LIFECYCLE : LogLevel.INFO
     logger.log(logLevel, "Applying $pluginClassName with version $pluginVersion via init script")
 
-    def externallyApplied = 'develocity-injection.develocity.externally-applied'
-    def externallyAppliedDeprecated = 'develocity-injection.gradle-enterprise.externally-applied'
+    def externallyApplied = 'develocity.externally-applied'
+    def externallyAppliedDeprecated = 'gradle.enterprise.externally-applied'
     def oldValue = System.getProperty(externallyApplied)
     def oldValueDeprecated = System.getProperty(externallyAppliedDeprecated)
     System.setProperty(externallyApplied, 'true')
