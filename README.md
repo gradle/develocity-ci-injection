@@ -17,7 +17,45 @@ An init-script that can be used by CI integrations to inject Develocity into a G
   - Tag the repository with the version number
   - Commit the new reference script to this repository
   - [Create PRs to update the script](https://github.com/gradle/develocity-ci-injection/actions/runs/9102707566/workflow#L48-L57) in various CI plugin repositories. [See here for an example run](https://github.com/gradle/develocity-ci-injection/actions/runs/9102707566) with links to generated PRs.
- 
+
+## Develocity injection input parameters
+
+A number of input parameters can be used to control Develocity injection.
+
+These inputs can be provided via system properties (e.g., `-Ddevelocity-injection.url=https://ge.gradle.org`)
+or via environment variables by replacing all hyphens (`-`) and periods (`.`) with underscores (`_`), and capitalizing all characters (e.g., `DEVELOCITY_INJECTION_URL=https://ge.gradle.org`).
+
+### Control parameters
+
+| Input                                 |      Required      | Definition                                                     |
+|---------------------------------------|:------------------:|----------------------------------------------------------------|
+| develocity-injection.init-script-name | :white_check_mark: | must match the name of the init-script                         |
+| develocity-injection.enabled          | :white_check_mark: | set to 'true' to enable Develocity injection                   |
+| develocity-injection.debug            |                    | set to 'true' to enable debug logging for Develocity injection |
+
+### Develocity plugin resolution
+
+| Input                                           |      Required      | Definition                                                                                                                                   |
+|-------------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------------------------|
+| develocity-injection.develocity-plugin.version  | :white_check_mark: | the version of the [Develocity Gradle plugin](https://docs.gradle.com/develocity/gradle-plugin/) to apply                                    |
+| develocity-injection.ccud-plugin.version        |                    | the version of the [Common Custom User Data Gradle plugin](https://github.com/gradle/common-custom-user-data-gradle-plugin) to apply, if any |
+| develocity-injection.plugin-repository.url      |                    | the URL of the repository to use when resolving the Develocity and CCUD plugins; the Gradle Plugin Portal is used by default                 |
+| develocity-injection.plugin-repository.username |                    | the username for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
+| develocity-injection.plugin-repository.password |                    | the password for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
+
+### Develocity configuration
+
+| Input                                          |      Required      | Definition                                                                                                                 |
+|------------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------|
+| develocity-injection.url                       | :white_check_mark: | the URL of the Develocity server                                                                                           |
+| develocity-injection.enforce-url               |                    | enforce the configured Develocity URL over a URL configured in the project's build                                         |
+| develocity-injection.allow-untrusted-server    |                    | allow communication with an untrusted server; set to _true_ if your Develocity instance is using a self-signed certificate |
+| develocity-injection.capture-file-fingerprints |                    | enables capturing the paths and content hashes of each individual input file                                               |
+| develocity-injection.upload-in-background      |                    | set to 'false' to disable background upload of build scans                                                                 |
+| develocity-injection.custom-value              |                    | Add a Build Scan custom value to identify auto-injection builds                                                            |
+| develocity-injection.terms-of-use.url          |                    | enable publishing to scans.gradle.com                                                                                      |
+| develocity-injection.terms-of-use.agree        |                    | enable publishing to scans.gradle.com                                                                                      |
+
 ## Existing Develocity CI integrations
 
 The following Develocity CI integrations leverage the Gradle init-script from this repository.
