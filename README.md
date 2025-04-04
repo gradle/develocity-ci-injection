@@ -35,13 +35,13 @@ or via environment variables by replacing all hyphens (`-`) and periods (`.`) wi
 
 ### Develocity plugin resolution
 
-| Input                                    |      Required      | Definition                                                                                                                                   |
-|------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------------------------|
-| develocity-injection.plugin-version      | :white_check_mark: | the version of the [Develocity Gradle plugin](https://docs.gradle.com/develocity/gradle-plugin/) to apply                                    |
-| develocity-injection.ccud-plugin-version |                    | the version of the [Common Custom User Data Gradle plugin](https://github.com/gradle/common-custom-user-data-gradle-plugin) to apply, if any |
-| gradle.plugin-repository.url             |                    | the URL of the repository to use when resolving the Develocity and CCUD plugins; the Gradle Plugin Portal is used by default                 |
-| gradle.plugin-repository.username        |                    | the username for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
-| gradle.plugin-repository.password        |                    | the password for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
+| Input                                           |      Required      | Definition                                                                                                                                   |
+|-------------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------------------------|
+| develocity-injection.develocity-plugin.version  | :white_check_mark: | the version of the [Develocity Gradle plugin](https://docs.gradle.com/develocity/gradle-plugin/) to apply                                    |
+| develocity-injection.ccud-plugin.version        |                    | the version of the [Common Custom User Data Gradle plugin](https://github.com/gradle/common-custom-user-data-gradle-plugin) to apply, if any |
+| develocity-injection.plugin-repository.url      |                    | the URL of the repository to use when resolving the Develocity and CCUD plugins; the Gradle Plugin Portal is used by default                 |
+| develocity-injection.plugin-repository.username |                    | the username for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
+| develocity-injection.plugin-repository.password |                    | the password for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
 
 ### Develocity configuration
 

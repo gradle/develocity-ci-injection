@@ -256,22 +256,22 @@ abstract class BaseInitScriptTest extends Specification {
     // for TestKit versions that don't support environment variables, map those vars to system properties
     private static List<String> mapEnvVarsToSystemProps(Map<String, String> envVars) {
         def mapping = [
-            DEVELOCITY_INJECTION_ENABLED                  : "develocity-injection.enabled",
-            DEVELOCITY_INJECTION_INIT_SCRIPT_NAME         : "develocity-injection.init-script-name",
-            DEVELOCITY_INJECTION_DEBUG                    : "develocity-injection.debug",
-            DEVELOCITY_INJECTION_CUSTOM_VALUE             : "develocity-injection.custom-value",
-            DEVELOCITY_INJECTION_URL                      : "develocity-injection.url",
-            DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER   : "develocity-injection.allow-untrusted-server",
-            DEVELOCITY_INJECTION_ENFORCE_URL              : "develocity-injection.enforce-url",
-            DEVELOCITY_INJECTION_PLUGIN_VERSION           : "develocity-injection.plugin.version",
-            DEVELOCITY_INJECTION_CCUD_PLUGIN_VERSION      : "develocity-injection.ccud-plugin.version",
-            DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND     : "develocity-injection.upload-in-background",
-            DEVELOCITY_INJECTION_CAPTURE_FILE_FINGERPRINTS: "develocity-injection.capture-file-fingerprints",
-            DEVELOCITY_INJECTION_TERMS_OF_USE_URL         : "develocity-injection.terms-of-use.url",
-            DEVELOCITY_INJECTION_TERMS_OF_USE_AGREE       : "develocity-injection.terms-of-use.agree",
-            GRADLE_PLUGIN_REPOSITORY_URL                  : "gradle.plugin-repository.url",
-            GRADLE_PLUGIN_REPOSITORY_USERNAME             : "gradle.plugin-repository.username",
-            GRADLE_PLUGIN_REPOSITORY_PASSWORD             : "gradle.plugin-repository.password",
+            DEVELOCITY_INJECTION_ENABLED                   : "develocity-injection.enabled",
+            DEVELOCITY_INJECTION_INIT_SCRIPT_NAME          : "develocity-injection.init-script-name",
+            DEVELOCITY_INJECTION_DEBUG                     : "develocity-injection.debug",
+            DEVELOCITY_INJECTION_CUSTOM_VALUE              : "develocity-injection.custom-value",
+            DEVELOCITY_INJECTION_URL                       : "develocity-injection.url",
+            DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER    : "develocity-injection.allow-untrusted-server",
+            DEVELOCITY_INJECTION_ENFORCE_URL               : "develocity-injection.enforce-url",
+            DEVELOCITY_INJECTION_DEVELOCITY_PLUGIN_VERSION : "develocity-injection.develocity-plugin.version",
+            DEVELOCITY_INJECTION_CCUD_PLUGIN_VERSION       : "develocity-injection.ccud-plugin.version",
+            DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND      : "develocity-injection.upload-in-background",
+            DEVELOCITY_INJECTION_CAPTURE_FILE_FINGERPRINTS : "develocity-injection.capture-file-fingerprints",
+            DEVELOCITY_INJECTION_TERMS_OF_USE_URL          : "develocity-injection.terms-of-use.url",
+            DEVELOCITY_INJECTION_TERMS_OF_USE_AGREE        : "develocity-injection.terms-of-use.agree",
+            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_URL     : "develocity-injection.plugin-repository.url",
+            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_USERNAME: "develocity-injection.plugin-repository.username",
+            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_PASSWORD: "develocity-injection.plugin-repository.password",
         ]
 
         return envVars.entrySet().stream().map(e -> {
@@ -496,14 +496,14 @@ abstract class BaseInitScriptTest extends Specification {
             ]
             if (initScriptName) envVars.put("DEVELOCITY_INJECTION_INIT_SCRIPT_NAME", initScriptName)
             if (enforceUrl) envVars.put("DEVELOCITY_INJECTION_ENFORCE_URL", "true")
-            if (develocityPluginVersion != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_VERSION", develocityPluginVersion)
+            if (develocityPluginVersion != null) envVars.put("DEVELOCITY_INJECTION_DEVELOCITY_PLUGIN_VERSION", develocityPluginVersion)
             if (ccudPluginVersion != null) envVars.put("DEVELOCITY_INJECTION_CCUD_PLUGIN_VERSION", ccudPluginVersion)
             if (captureFileFingerprints) envVars.put("DEVELOCITY_INJECTION_CAPTURE_FILE_FINGERPRINTS", "true")
             if (termsOfUseUrl != null) envVars.put("DEVELOCITY_INJECTION_TERMS_OF_USE_URL", termsOfUseUrl)
             if (termsOfUseAgree != null) envVars.put("DEVELOCITY_INJECTION_TERMS_OF_USE_AGREE", termsOfUseAgree)
-            if (pluginRepositoryUrl != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_URL", pluginRepositoryUrl)
-            if (pluginRepositoryUsername != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
-            if (pluginRepositoryPassword != null) envVars.put("GRADLE_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
+            if (pluginRepositoryUrl != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_URL", pluginRepositoryUrl)
+            if (pluginRepositoryUsername != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
+            if (pluginRepositoryPassword != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
             return envVars
         }
     }

@@ -30,10 +30,10 @@ initscript {
         return
     }
 
-    def pluginRepositoryUrl = getInputParam(gradle, 'gradle.plugin-repository.url')
-    def pluginRepositoryUsername = getInputParam(gradle, 'gradle.plugin-repository.username')
-    def pluginRepositoryPassword = getInputParam(gradle, 'gradle.plugin-repository.password')
-    def develocityPluginVersion = getInputParam(gradle, 'develocity-injection.plugin.version')
+    def pluginRepositoryUrl = getInputParam(gradle, 'develocity-injection.plugin-repository.url')
+    def pluginRepositoryUsername = getInputParam(gradle, 'develocity-injection.plugin-repository.username')
+    def pluginRepositoryPassword = getInputParam(gradle, 'develocity-injection.plugin-repository.password')
+    def develocityPluginVersion = getInputParam(gradle, 'develocity-injection.develocity-plugin.version')
     def ccudPluginVersion = getInputParam(gradle, 'develocity-injection.ccud-plugin.version')
     def logLevel = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.debug')) ? LogLevel.LIFECYCLE : LogLevel.INFO
 
@@ -132,7 +132,7 @@ void enableDevelocityInjection() {
     def develocityEnforceUrl = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.enforce-url'))
     def buildScanUploadInBackground = Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.upload-in-background'))
     def develocityCaptureFileFingerprints = getInputParam(gradle, 'develocity-injection.capture-file-fingerprints') ? Boolean.parseBoolean(getInputParam(gradle, 'develocity-injection.capture-file-fingerprints')) : true
-    def develocityPluginVersion = getInputParam(gradle, 'develocity-injection.plugin.version')
+    def develocityPluginVersion = getInputParam(gradle, 'develocity-injection.develocity-plugin.version')
     def ccudPluginVersion = getInputParam(gradle, 'develocity-injection.ccud-plugin.version')
     def buildScanTermsOfUseUrl = getInputParam(gradle, 'develocity-injection.terms-of-use.url')
     def buildScanTermsOfUseAgree = getInputParam(gradle, 'develocity-injection.terms-of-use.agree')
