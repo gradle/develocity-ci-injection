@@ -27,16 +27,16 @@ or via environment variables by replacing all hyphens (`-`) and periods (`.`) wi
 
 ### Control parameters
 
-| Input                                 | Required           | Definition                                                     |
-|---------------------------------------|--------------------|----------------------------------------------------------------|
+| Input                                 |      Required      | Definition                                                     |
+|---------------------------------------|:------------------:|----------------------------------------------------------------|
 | develocity-injection.init-script-name | :white_check_mark: | must match the name of the init-script                         |
 | develocity-injection.enabled          | :white_check_mark: | set to 'true' to enable Develocity injection                   |
 | develocity-injection.debug            |                    | set to 'true' to enable debug logging for Develocity injection |
 
 ### Develocity plugin resolution
 
-| Input                                    | Required           | Definition                                                                                                                                   |
-|------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Input                                    |      Required      | Definition                                                                                                                                   |
+|------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------------------------|
 | develocity-injection.plugin-version      | :white_check_mark: | the version of the [Develocity Gradle plugin](https://docs.gradle.com/develocity/gradle-plugin/) to apply                                    |
 | develocity-injection.ccud-plugin-version |                    | the version of the [Common Custom User Data Gradle plugin](https://github.com/gradle/common-custom-user-data-gradle-plugin) to apply, if any |
 | gradle.plugin-repository.url             |                    | the URL of the repository to use when resolving the Develocity and CCUD plugins; the Gradle Plugin Portal is used by default                 |
@@ -45,8 +45,8 @@ or via environment variables by replacing all hyphens (`-`) and periods (`.`) wi
 
 ### Develocity configuration
 
-| Input                                          | Required           | Definition                                                                                                                 |
-|------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------|
+| Input                                          |      Required      | Definition                                                                                                                 |
+|------------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------|
 | develocity-injection.url                       | :white_check_mark: | the URL of the Develocity server                                                                                           |
 | develocity-injection.enforce-url               |                    | enforce the configured Develocity URL over a URL configured in the project's build                                         |
 | develocity-injection.allow-untrusted-server    |                    | allow communication with an untrusted server; set to _true_ if your Develocity instance is using a self-signed certificate |
