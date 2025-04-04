@@ -487,12 +487,12 @@ abstract class BaseInitScriptTest extends Specification {
 
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
-                DEVELOCITY_INJECTION_ENABLED                        : String.valueOf(injectionEnabled),
-                DEVELOCITY_INJECTION_DEBUG                          : String.valueOf(debug),
-                DEVELOCITY_INJECTION_URL                            : serverUrl,
-                DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER         : "true",
-                DEVELOCITY_INJECTION_BUILD_SCAN_UPLOAD_IN_BACKGROUND: String.valueOf(uploadInBackground),
-                DEVELOCITY_INJECTION_AUTO_INJECTION_CUSTOM_VALUE    : 'gradle-actions'
+                DEVELOCITY_INJECTION_ENABLED               : String.valueOf(injectionEnabled),
+                DEVELOCITY_INJECTION_DEBUG                 : String.valueOf(debug),
+                DEVELOCITY_INJECTION_URL                   : serverUrl,
+                DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER: "true",
+                DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND  : String.valueOf(uploadInBackground),
+                DEVELOCITY_INJECTION_CUSTOM_VALUE          : 'gradle-actions'
             ]
             if (initScriptName) envVars.put("DEVELOCITY_INJECTION_INIT_SCRIPT_NAME", initScriptName)
             if (enforceUrl) envVars.put("DEVELOCITY_INJECTION_ENFORCE_URL", "true")
