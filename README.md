@@ -17,7 +17,45 @@ An init-script that can be used by CI integrations to inject Develocity into a G
   - Tag the repository with the version number
   - Commit the new reference script to this repository
   - [Create PRs to update the script](https://github.com/gradle/develocity-ci-injection/actions/runs/9102707566/workflow#L48-L57) in various CI plugin repositories. [See here for an example run](https://github.com/gradle/develocity-ci-injection/actions/runs/9102707566) with links to generated PRs.
- 
+
+## Develocity injection input parameters
+
+A number of input parameters can be used to control Develocity injection.
+
+These inputs can be provided via System Properties (eg `-Ddevelocity-injection.url=https://ge.gradle.org`)
+or via Environment variables in all caps (eg `DEVELOCITY_INJECTION_URL=https://ge.gradle.org`)
+
+### Control parameters
+
+| Input                                                                          | Required           | Definition                                                     |
+|--------------------------------------------------------------------------------|--------------------|----------------------------------------------------------------|
+| develocity-injection.init-script-name<br>DEVELOCITY_INJECTION_INIT_SCRIPT_NAME | :white_check_mark: | must match the name of the init-script                         |
+| develocity-injection.enabled<br>DEVELOCITY_INJECTION_ENABLED                   | :white_check_mark: | set to 'true' to enable Develocity injection                   |
+| develocity-injection.debug<br>DEVELOCITY_INJECTION_DEBUG                       |                    | set to 'true' to enable debug logging for Develocity injection |
+
+### Develocity plugin resolution
+
+| Input                                                                                | Required           | Definition                                                                                                                                   |
+|--------------------------------------------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| develocity-injection.plugin-version<br>DEVELOCITY_INJECTION_PLUGIN_VERSION           | :white_check_mark: | the version of the [Develocity Gradle plugin](https://docs.gradle.com/develocity/gradle-plugin/) to apply                                    |
+| develocity-injection.ccud-plugin-version<br>DEVELOCITY_INJECTION_CCUD_PLUGIN_VERSION |                    | the version of the [Common Custom User Data Gradle plugin](https://github.com/gradle/common-custom-user-data-gradle-plugin) to apply, if any |
+| gradle.plugin-repository.url<br>GRADLE_PLUGIN_REPOSITORY_URL                         |                    | the URL of the repository to use when resolving the Develocity and CCUD plugins; the Gradle Plugin Portal is used by default                 |
+| gradle.plugin-repository.username<br>GRADLE_PLUGIN_REPOSITORY_USERNAME               |                    | the username for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
+| gradle.plugin-repository.password<br>GRADLE_PLUGIN_REPOSITORY_PASSWORD               |                    | the password for the repository URL to use when resolving the Develocity and CCUD plugins                                                    |
+
+### Develocity configuration
+
+| Input                                                                                            | Required           | Definition                                                                                                                 |
+|--------------------------------------------------------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------|
+| develocity-injection.url<br>DEVELOCITY_INJECTION_URL                                             | :white_check_mark: | the URL of the Develocity server                                                                                           |
+| develocity-injection.enforce-url<br>DEVELOCITY_INJECTION_ENFORCE_URL                             |                    | enforce the configured Develocity URL over a URL configured in the project's build                                         |
+| develocity-injection.allow-untrusted-server<br>DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER       |                    | allow communication with an untrusted server; set to _true_ if your Develocity instance is using a self-signed certificate |
+| develocity-injection.capture-file-fingerprints<br>DEVELOCITY_INJECTION_CAPTURE_FILE_FINGERPRINTS |                    | enables capturing the paths and content hashes of each individual input file                                               |
+| develocity-injection.upload-in-background<br>DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND           |                    | set to 'false' to disable background upload of build scans                                                                 |
+| develocity-injection.custom-value<br>DEVELOCITY_INJECTION_CUSTOM_VALUE                           |                    | Add a Build Scan custom value to identify auto-injection builds                                                            |
+| develocity-injection.terms-of-use.url<br>DEVELOCITY_INJECTION_TERMS_OF_USE_URL                   |                    | enable publishing to scans.gradle.com                                                                                      |
+| develocity-injection.terms-of-use.agree<br>DEVELOCITY_INJECTION_TERMS_OF_USE_AGREE               |                    | enable publishing to scans.gradle.com                                                                                      |
+
 ## Existing Develocity CI integrations
 
 The following Develocity CI integrations leverage the Gradle init-script from this repository.
