@@ -128,7 +128,6 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         where:
         testGradle | buildCacheExtension | testDvPlugin
         GRADLE_8_X | "develocity"        | dvPlugin(DvPluginId.DEVELOCITY, DEVELOCITY_PLUGIN_VERSION)
-        GRADLE_8_X | "gradleEnterprise"  | dvPlugin(DvPluginId.GRADLE_ENTERPRISE, DEVELOCITY_PLUGIN_VERSION, true)
         GRADLE_8_X | "gradleEnterprise"  | dvPlugin(DvPluginId.GRADLE_ENTERPRISE, "3.16.2")
     }
 

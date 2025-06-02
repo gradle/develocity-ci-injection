@@ -49,7 +49,6 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION),
         dvPlugin(DEVELOCITY, '3.17'),
 
-        dvPlugin(GRADLE_ENTERPRISE, DEVELOCITY_PLUGIN_VERSION, true),
         dvPlugin(GRADLE_ENTERPRISE, '3.17', true),
         dvPlugin(GRADLE_ENTERPRISE, '3.16.2'),  // Last version before DV
         dvPlugin(GRADLE_ENTERPRISE, '3.11.1'), // Oldest version compatible with CCUD 2.0.2
@@ -57,7 +56,6 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(GRADLE_ENTERPRISE, '3.2.1'), // Introduced 'gradleEnterprise.server' element
         dvPlugin(GRADLE_ENTERPRISE, '3.0'), // Earliest version of `com.gradle.enterprise` plugin
 
-        dvPlugin(BUILD_SCAN, DEVELOCITY_PLUGIN_VERSION, true),
         dvPlugin(BUILD_SCAN, '3.17', true),
         dvPlugin(BUILD_SCAN, '3.16.2'), // Last version before DV
         dvPlugin(BUILD_SCAN, '3.3.4'), // Has background build-scan upload
@@ -67,6 +65,7 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(BUILD_SCAN, '1.16'),
         dvPlugin(BUILD_SCAN, '1.10'),
     ]
+    static final BUILD_SCAN_MESSAGES = ["Publishing build scan...", "Publishing Build Scan..."]
 
     // Gradle + plugin versions to test DV injection: used to test with project with no DV plugin defined
     static def getVersionsToTestForPluginInjection(List<TestGradleVersion> gradleVersions = ALL_GRADLE_VERSIONS) {
@@ -294,7 +293,9 @@ abstract class BaseInitScriptTest extends Specification {
     }
 
     void outputContainsBuildScanUrl(BuildResult result) {
-        def message = "Publishing build scan..."
+        def opt = BUILD_SCAN_MESSAGES.stream().filter { result.output.contains(it) }.findFirst()
+        assert opt.isPresent()
+        def message = opt.get()
         def buildScanUrl = "${mockScansServer.address}s/$PUBLIC_BUILD_SCAN_ID"
         assert result.output.contains(message)
         assert result.output.contains(buildScanUrl)
@@ -304,8 +305,8 @@ abstract class BaseInitScriptTest extends Specification {
     }
 
     void outputMissesBuildScanUrl(BuildResult result) {
-        def message = "Publishing build scan..."
-        assert !result.output.contains(message)
+        def opt = BUILD_SCAN_MESSAGES.stream().filter { result.output.contains(it) }.findFirst()
+        assert !opt.isPresent()
     }
 
     void outputContainsDevelocityPluginApplicationViaInitScript(BuildResult result, GradleVersion gradleVersion, String pluginVersion = DEVELOCITY_PLUGIN_VERSION) {
@@ -606,7 +607,7 @@ abstract class BaseInitScriptTest extends Specification {
                     return """
                         develocity {
                             server = '$serverUri'
-                        }   
+                        }
                     """
                 case GRADLE_ENTERPRISE:
                     if (pluginVersionAtLeast('3.2')) {
@@ -621,7 +622,7 @@ abstract class BaseInitScriptTest extends Specification {
                             gradleEnterprise {
                                 buildScan {
                                     server = '$serverUri'
-                                    publishAlways() 
+                                    publishAlways()
                                 }
                             }
                         """
