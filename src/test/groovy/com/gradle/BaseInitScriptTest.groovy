@@ -49,6 +49,7 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION),
         dvPlugin(DEVELOCITY, '3.17'),
 
+        dvPlugin(GRADLE_ENTERPRISE, "3.19.2", true),
         dvPlugin(GRADLE_ENTERPRISE, '3.17', true),
         dvPlugin(GRADLE_ENTERPRISE, '3.16.2'),  // Last version before DV
         dvPlugin(GRADLE_ENTERPRISE, '3.11.1'), // Oldest version compatible with CCUD 2.0.2
@@ -56,6 +57,7 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(GRADLE_ENTERPRISE, '3.2.1'), // Introduced 'gradleEnterprise.server' element
         dvPlugin(GRADLE_ENTERPRISE, '3.0'), // Earliest version of `com.gradle.enterprise` plugin
 
+        dvPlugin(BUILD_SCAN, "3.19.2", true),
         dvPlugin(BUILD_SCAN, '3.17', true),
         dvPlugin(BUILD_SCAN, '3.16.2'), // Last version before DV
         dvPlugin(BUILD_SCAN, '3.3.4'), // Has background build-scan upload
