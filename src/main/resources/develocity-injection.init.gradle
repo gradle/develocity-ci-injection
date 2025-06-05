@@ -15,7 +15,11 @@ initscript {
     def getInputParam = { Gradle gradle, String name ->
         def ENV_VAR_PREFIX = ''
         def envVarName = ENV_VAR_PREFIX + name.toUpperCase().replace('.', '_').replace('-', '_')
-        return gradle.startParameter.systemPropertiesArgs[name] ?: System.getProperty(name) ?: System.getenv(envVarName)
+        // We read the system property value first to make sure it becomes a configuration cache input
+        // Reading from gradle.startParameter.systemPropertiesArgs does not have that effect
+        // We read from gradle.startParameter since Gradle 7.0.2 and earlier cannot reliably read system properties
+        // using System.getProperty from init scripts.
+        return System.getProperty(name) ?: gradle.startParameter.systemPropertiesArgs[name] ?: System.getenv(envVarName)
     }
 
     def requestedInitScriptName = getInputParam(gradle, 'develocity-injection.init-script-name')
@@ -83,7 +87,11 @@ initscript {
 static getInputParam(Gradle gradle, String name) {
     def ENV_VAR_PREFIX = ''
     def envVarName = ENV_VAR_PREFIX + name.toUpperCase().replace('.', '_').replace('-', '_')
-    return gradle.startParameter.systemPropertiesArgs[name] ?: System.getProperty(name) ?: System.getenv(envVarName)
+    // We read the system property value first to make sure it becomes a configuration cache input
+    // Reading from gradle.startParameter.systemPropertiesArgs does not have that effect
+    // We read from gradle.startParameter since Gradle 7.0.2 and earlier cannot reliably read system properties
+    // using System.getProperty from init scripts.
+    return System.getProperty(name) ?: gradle.startParameter.systemPropertiesArgs[name] ?: System.getenv(envVarName)
 }
 
 def isTopLevelBuild = !gradle.parent
