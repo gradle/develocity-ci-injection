@@ -15,7 +15,10 @@ initscript {
     def getInputParam = { Gradle gradle, String name ->
         def ENV_VAR_PREFIX = ''
         def envVarName = ENV_VAR_PREFIX + name.toUpperCase().replace('.', '_').replace('-', '_')
-        return gradle.startParameter.systemPropertiesArgs[name] ?: System.getProperty(name) ?: System.getenv(envVarName)
+        // We read the system property value always to make sure it becomes a configuration cache input
+        // Reading from gradle.startParameter.systemPropertiesArgs does not have that effect
+        def systemPropertyValue = System.getProperty(name)
+        return gradle.startParameter.systemPropertiesArgs[name] ?: systemPropertyValue ?: System.getenv(envVarName)
     }
 
     def requestedInitScriptName = getInputParam(gradle, 'develocity-injection.init-script-name')
@@ -83,7 +86,10 @@ initscript {
 static getInputParam(Gradle gradle, String name) {
     def ENV_VAR_PREFIX = ''
     def envVarName = ENV_VAR_PREFIX + name.toUpperCase().replace('.', '_').replace('-', '_')
-    return gradle.startParameter.systemPropertiesArgs[name] ?: System.getProperty(name) ?: System.getenv(envVarName)
+    // We read the system property value always to make sure it becomes a configuration cache input
+    // Reading from gradle.startParameter.systemPropertiesArgs does not have that effect
+    def systemPropertyValue = System.getProperty(name)
+    return gradle.startParameter.systemPropertiesArgs[name] ?: systemPropertyValue ?: System.getenv(envVarName)
 }
 
 def isTopLevelBuild = !gradle.parent
