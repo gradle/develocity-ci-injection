@@ -487,4 +487,31 @@ class TestDevelocityInjection extends BaseInitScriptTest {
         testGradle << CONFIGURATION_CACHE_GRADLE_VERSIONS
     }
 
+    @Requires({data.testGradle.compatibleWithCurrentJvm})
+    def "init script picks up system property changes when using configuration cache"() {
+        when:
+        def config = testConfig()
+        def result = run(testGradle, config, ["help", "--configuration-cache", "-Ddevelocity-injection.ccud-plugin.version=${CCUD_PLUGIN_VERSION}".toString()])
+
+        then:
+        outputContainsDevelocityPluginApplicationViaInitScript(result, testGradle.gradleVersion)
+        outputContainsCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        when:
+        result = run(testGradle, config, ["help", "--configuration-cache"])
+
+        then:
+        outputContainsDevelocityPluginApplicationViaInitScript(result, testGradle.gradleVersion)
+        outputMissesCcudPluginApplicationViaInitScript(result)
+
+        and:
+        outputContainsBuildScanUrl(result)
+
+        where:
+        testGradle << CONFIGURATION_CACHE_GRADLE_VERSIONS
+    }
+
 }
