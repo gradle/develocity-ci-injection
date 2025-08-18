@@ -67,7 +67,7 @@ abstract class BaseInitScriptTest extends Specification {
         dvPlugin(BUILD_SCAN, '1.16'),
         dvPlugin(BUILD_SCAN, '1.10'),
     ]
-    static final BUILD_SCAN_MESSAGES = ["Publishing build scan...", "Publishing Build Scan..."]
+    static final BUILD_SCAN_MESSAGES = ["Publishing build scan...", "Publishing Build Scan...", "Publishing Build Scan to Develocity..."]
 
     // Gradle + plugin versions to test DV injection: used to test with project with no DV plugin defined
     static def getVersionsToTestForPluginInjection(List<TestGradleVersion> gradleVersions = ALL_GRADLE_VERSIONS) {
