@@ -25,7 +25,7 @@ jobs:
           git_commit_gpgsign: true
           git_config_global: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           java-version: '11'
@@ -40,7 +40,7 @@ jobs:
         run: ./gradlew promote -Pversion=${{ inputs.version }}
 
       - name: Commit & push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_author: bot-githubaction <bot-githubaction@gradle.com>
           commit_user_name: bot-githubaction
