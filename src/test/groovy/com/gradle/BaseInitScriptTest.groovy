@@ -21,7 +21,7 @@ abstract class BaseInitScriptTest extends Specification {
     static final GradleVersion GRADLE_5 = GradleVersion.version('5.0')
     static final GradleVersion GRADLE_6 = GradleVersion.version('6.0')
 
-    static final String DEVELOCITY_PLUGIN_VERSION = '4.1.1'
+    static final String DEVELOCITY_PLUGIN_VERSION = '4.2'
     static final String CCUD_PLUGIN_VERSION = '2.4.0'
 
     static final TestGradleVersion GRADLE_3_X = new TestGradleVersion(GradleVersion.version('3.5.1'), 7, 9)
