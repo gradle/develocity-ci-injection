@@ -84,7 +84,7 @@ jobs:
     with:
       version: ${{ inputs.version }}
       repository: 'jenkinsci/gradle-plugin'
-      script-location: 'src/main/resources/hudson/plugins/gradle/injection/init-script.gradle'
+      script-location: 'plugin/src/main/resources/hudson/plugins/gradle/injection/init-script.gradle'
     secrets: inherit
 
   update-develocity-teamcity-plugin:
