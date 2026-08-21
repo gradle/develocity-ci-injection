@@ -36,12 +36,12 @@ jobs:
           git_commit_gpgsign: true
           git_config_global: true
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: main # Include the changes commmited in the previous job
           token: ${{ secrets.GH_BOT_GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
           path: ${{ inputs.repository }}
@@ -59,7 +59,7 @@ jobs:
       # If there are no changes, this action will not create a pull request
       - name: Create or update pull request
         id: create-pr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           path: ${{ inputs.repository }}
           committer:  Bot Githubaction <bot-githubaction@gradle.com>
