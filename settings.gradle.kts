@@ -4,7 +4,7 @@ plugins {
 }
 
 develocity {
-    server = "https://solutions.develocity.cloud"
+    server = "https://ge.solutions-team.gradle.com"
 }
 
 rootProject.name = "develocity-ci-injection"
