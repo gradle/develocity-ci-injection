@@ -12,6 +12,8 @@ import spock.lang.AutoCleanup
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.stream.Collectors
 import java.util.zip.GZIPOutputStream
 
@@ -28,6 +30,7 @@ abstract class BaseInitScriptTest extends Specification {
     static final TestGradleVersion GRADLE_4_X = new TestGradleVersion(GradleVersion.version('4.10.3'), 7, 10)
     static final TestGradleVersion GRADLE_5_X = new TestGradleVersion(GradleVersion.version('5.6.4'), 8, 12)
     static final TestGradleVersion GRADLE_6_X = new TestGradleVersion(GradleVersion.version('6.9.4'), 8, 15)
+    static final TestGradleVersion GRADLE_7_4 = new TestGradleVersion(GradleVersion.version('7.4.2'), 8, 17)
     static final TestGradleVersion GRADLE_7_X = new TestGradleVersion(GradleVersion.version('7.6.4'), 8, 19)
     static final TestGradleVersion GRADLE_8_0 = new TestGradleVersion(GradleVersion.version('8.0.2'), 8, 19)
     static final TestGradleVersion GRADLE_8_X = new TestGradleVersion(GradleVersion.version('8.13'), 8, 21)
@@ -44,6 +47,9 @@ abstract class BaseInitScriptTest extends Specification {
 
     static final List<TestGradleVersion> CONFIGURATION_CACHE_GRADLE_VERSIONS =
         [GRADLE_7_X, GRADLE_8_0, GRADLE_8_X].intersect(ALL_GRADLE_VERSIONS)
+
+    static final List<TestGradleVersion> BUILD_CACHE_CONNECTOR_GRADLE_VERSIONS =
+        ALL_GRADLE_VERSIONS.findAll { it.gradleVersion >= GRADLE_6 }
 
     static final List<TestDvPluginVersion> DV_PLUGIN_VERSIONS = [
         dvPlugin(DEVELOCITY, DEVELOCITY_PLUGIN_VERSION),
@@ -99,6 +105,9 @@ abstract class BaseInitScriptTest extends Specification {
     static final String INIT_SCRIPT_SOURCE = 'src/main/resources/develocity-injection.init.gradle'
     boolean failScanUpload = false
 
+    List<Map<String, String>> remoteBuildCacheRequests = new CopyOnWriteArrayList<>()
+    List<Map<String, String>> buildCacheNodeRequests = new CopyOnWriteArrayList<>()
+
     File settingsFile
     File buildFile
     File gradleProperties
@@ -114,6 +123,7 @@ abstract class BaseInitScriptTest extends Specification {
     def mockScansServer = GroovyEmbeddedApp.of {
         def jsonWriter = new ObjectMapper(new JsonFactory()).writer()
         def smileWriter = new ObjectMapper(new SmileFactory()).writer()
+        def remoteBuildCacheEntries = new ConcurrentHashMap<String, byte[]>()
 
         handlers {
             post('in/:gradleVersion/:pluginVersion') {
@@ -175,6 +185,38 @@ abstract class BaseInitScriptTest extends Specification {
                 }
                 notFound()
             }
+            prefix('cache') {
+                all {
+                    remoteBuildCacheRequests << [method: request.method.name, path: request.path, authorization: request.headers.get('Authorization')]
+                    if (request.method.name == 'PUT') {
+                        context.request.getBody(1024 * 1024 * 10).then { body ->
+                            remoteBuildCacheEntries[request.path] = body.bytes
+                            context.response.status(200).send()
+                        }
+                    } else if (remoteBuildCacheEntries.containsKey(request.path)) {
+                        context.response.send(remoteBuildCacheEntries[request.path])
+                    } else {
+                        context.response.status(404).send()
+                    }
+                }
+            }
+        }
+    }
+
+    // No test loads from the Build Cache Node, so it accepts uploads without storing them
+    @AutoCleanup
+    def mockBuildCacheNode = GroovyEmbeddedApp.of {
+        handlers {
+            all {
+                buildCacheNodeRequests << [method: request.method.name, path: request.path]
+                if (request.method.name == 'PUT') {
+                    context.request.getBody(1024 * 1024 * 10).then {
+                        context.response.status(200).send()
+                    }
+                } else {
+                    context.response.status(404).send()
+                }
+            }
         }
     }
 
@@ -202,6 +244,55 @@ abstract class BaseInitScriptTest extends Specification {
         }
     }
 
+    void declareDvPluginApplicationWithoutServer(TestDvPluginVersion dvPlugin) {
+        settingsFile.text = "plugins { id '${dvPlugin.id}' version '${dvPlugin.version}' }\n"
+    }
+
+    void declareJavaProject() {
+        buildFile.text = "apply plugin: 'java'\n"
+        def sourceFile = new File(testProjectDir, 'src/main/java/Foo.java')
+        sourceFile.parentFile.mkdirs()
+        // A unique class keeps outputs from being loaded from the local build cache shared between tests
+        sourceFile.text = "public class Foo { String id = \"${UUID.randomUUID()}\"; }"
+    }
+
+    // Declares a Develocity Build Cache connector that points at the mock Build Cache Node
+    void declareBuildCacheConnector(TestDvPluginVersion dvPlugin, String extension = dvPlugin.pluginId == DEVELOCITY ? 'develocity' : 'gradleEnterprise') {
+        settingsFile << """
+            buildCache {
+                remote(${extension}.buildCache) {
+                    server = '${buildCacheNodeServer()}'
+                    path = 'node-cache'
+                    allowInsecureProtocol = true
+                    push = false
+                }
+            }
+        """
+    }
+
+    void declareHttpBuildCache() {
+        settingsFile << """
+            buildCache {
+                remote(HttpBuildCache) {
+                    url = '${mockBuildCacheNode.address}node-cache/'
+                    allowInsecureProtocol = true
+                }
+            }
+        """
+    }
+
+    String develocityServer() {
+        return serverOf(mockScansServer.address)
+    }
+
+    String buildCacheNodeServer() {
+        return serverOf(mockBuildCacheNode.address)
+    }
+
+    private static String serverOf(URI address) {
+        return address.toString().replaceAll('/$', '')
+    }
+
     private String configuredPlugin(TestDvPluginVersion dvPlugin, String ccudPluginVersion, URI serverUri) {
         """
               plugins {
@@ -221,6 +312,10 @@ abstract class BaseInitScriptTest extends Specification {
 
     BuildResult run(TestGradleVersion testGradle, DvInjectionTestConfig config, List<String> args = ["help"]) {
         return run(args, testGradle, config.envVars)
+    }
+
+    static List<String> buildCacheArgs(String... extraArgs) {
+        return ['compileJava', '--build-cache'] + extraArgs.toList()
     }
 
     GradleRunner createRunner(List<String> args, GradleVersion gradleVersion = GradleVersion.current(), Map<String, String> envVars = [:]) {
@@ -257,22 +352,31 @@ abstract class BaseInitScriptTest extends Specification {
     // for TestKit versions that don't support environment variables, map those vars to system properties
     private static List<String> mapEnvVarsToSystemProps(Map<String, String> envVars) {
         def mapping = [
-            DEVELOCITY_INJECTION_ENABLED                   : "develocity-injection.enabled",
-            DEVELOCITY_INJECTION_INIT_SCRIPT_NAME          : "develocity-injection.init-script-name",
-            DEVELOCITY_INJECTION_DEBUG                     : "develocity-injection.debug",
-            DEVELOCITY_INJECTION_CUSTOM_VALUE              : "develocity-injection.custom-value",
-            DEVELOCITY_INJECTION_URL                       : "develocity-injection.url",
-            DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER    : "develocity-injection.allow-untrusted-server",
-            DEVELOCITY_INJECTION_ENFORCE_URL               : "develocity-injection.enforce-url",
-            DEVELOCITY_INJECTION_DEVELOCITY_PLUGIN_VERSION : "develocity-injection.develocity-plugin.version",
-            DEVELOCITY_INJECTION_CCUD_PLUGIN_VERSION       : "develocity-injection.ccud-plugin.version",
-            DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND      : "develocity-injection.upload-in-background",
-            DEVELOCITY_INJECTION_CAPTURE_FILE_FINGERPRINTS : "develocity-injection.capture-file-fingerprints",
-            DEVELOCITY_INJECTION_TERMS_OF_USE_URL          : "develocity-injection.terms-of-use.url",
-            DEVELOCITY_INJECTION_TERMS_OF_USE_AGREE        : "develocity-injection.terms-of-use.agree",
-            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_URL     : "develocity-injection.plugin-repository.url",
-            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_USERNAME: "develocity-injection.plugin-repository.username",
-            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_PASSWORD: "develocity-injection.plugin-repository.password",
+            DEVELOCITY_INJECTION_ENABLED                                   : "develocity-injection.enabled",
+            DEVELOCITY_INJECTION_INIT_SCRIPT_NAME                          : "develocity-injection.init-script-name",
+            DEVELOCITY_INJECTION_DEBUG                                     : "develocity-injection.debug",
+            DEVELOCITY_INJECTION_CUSTOM_VALUE                              : "develocity-injection.custom-value",
+            DEVELOCITY_INJECTION_URL                                       : "develocity-injection.url",
+            DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER                    : "develocity-injection.allow-untrusted-server",
+            DEVELOCITY_INJECTION_ENFORCE_URL                               : "develocity-injection.enforce-url",
+            DEVELOCITY_INJECTION_DEVELOCITY_PLUGIN_VERSION                 : "develocity-injection.develocity-plugin.version",
+            DEVELOCITY_INJECTION_CCUD_PLUGIN_VERSION                       : "develocity-injection.ccud-plugin.version",
+            DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND                      : "develocity-injection.upload-in-background",
+            DEVELOCITY_INJECTION_CAPTURE_FILE_FINGERPRINTS                 : "develocity-injection.capture-file-fingerprints",
+            DEVELOCITY_INJECTION_TERMS_OF_USE_URL                          : "develocity-injection.terms-of-use.url",
+            DEVELOCITY_INJECTION_TERMS_OF_USE_AGREE                        : "develocity-injection.terms-of-use.agree",
+            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_URL                     : "develocity-injection.plugin-repository.url",
+            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_USERNAME                : "develocity-injection.plugin-repository.username",
+            DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_PASSWORD                : "develocity-injection.plugin-repository.password",
+            DEVELOCITY_INJECTION_ENFORCE_BUILD_CACHE                       : "develocity-injection.enforce-build-cache",
+            DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_ENABLED                : "develocity-injection.remote-build-cache.enabled",
+            DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_PUSH                   : "develocity-injection.remote-build-cache.push",
+            DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_SERVER                 : "develocity-injection.remote-build-cache.server",
+            DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_PATH                   : "develocity-injection.remote-build-cache.path",
+            DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_ALLOW_INSECURE_PROTOCOL: "develocity-injection.remote-build-cache.allow-insecure-protocol",
+            DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_ALLOW_UNTRUSTED_SERVER : "develocity-injection.remote-build-cache.allow-untrusted-server",
+            DEVELOCITY_INJECTION_LOCAL_BUILD_CACHE_ENABLED                 : "develocity-injection.local-build-cache.enabled",
+            DEVELOCITY_INJECTION_LOCAL_BUILD_CACHE_PUSH                    : "develocity-injection.local-build-cache.push",
         ]
 
         return envVars.entrySet().stream().map(e -> {
@@ -408,6 +512,38 @@ abstract class BaseInitScriptTest extends Specification {
         assert 0 == result.output.count(message)
     }
 
+    void outputContainsRemoteBuildCacheConfiguration(BuildResult result, String server, boolean enabled, boolean push, String path = null, boolean allowInsecureProtocol = true, Boolean allowUntrustedServer = null) {
+        def message = "Configuring the remote build cache: $server, path: ${path ?: '<default>'}, enabled: $enabled, push: $push, allowInsecureProtocol: $allowInsecureProtocol, allowUntrustedServer: ${allowUntrustedServer == null ? '<default>' : allowUntrustedServer}"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
+    void outputMissesRemoteBuildCacheConfiguration(BuildResult result) {
+        assert !result.output.contains("Configuring the remote build cache:")
+    }
+
+    void outputContainsLocalBuildCacheConfiguration(BuildResult result, boolean enabled, boolean push) {
+        def message = "Configuring the local build cache: enabled: $enabled, push: $push"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
+    void outputMissesLocalBuildCacheConfiguration(BuildResult result) {
+        assert !result.output.contains("Configuring the local build cache:")
+    }
+
+    void outputSkipsRemoteBuildCache(BuildResult result, String reason) {
+        def message = "Remote build cache not configured because $reason"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
+    void outputSkipsLocalBuildCacheWithRemoteBuildCache(BuildResult result) {
+        def message = "Local build cache not configured to avoid leaving the build cache partially configured"
+        assert result.output.contains(message)
+        assert 1 == result.output.count(message)
+    }
+
     static class DvInjectionTestConfig {
         String initScriptName = "develocity-injection.init.gradle"
         boolean injectionEnabled = true
@@ -424,6 +560,15 @@ abstract class BaseInitScriptTest extends Specification {
         String termsOfUseUrl = null
         String termsOfUseAgree = null
         boolean uploadInBackground = true // Need to upload in background since our Mock server doesn't cope with foreground upload
+        boolean enforceBuildCache = false
+        Boolean remoteBuildCacheEnabled = null
+        Boolean remoteBuildCachePush = null
+        String remoteBuildCacheServer = null
+        String remoteBuildCachePath = null
+        boolean remoteBuildCacheAllowInsecureProtocol = true // Need to allow insecure protocol since our Mock servers use plain HTTP
+        boolean remoteBuildCacheAllowUntrustedServer = false
+        Boolean localBuildCacheEnabled = null
+        Boolean localBuildCachePush = null
 
         DvInjectionTestConfig(URI serverAddress, String develocityPluginVersion) {
             this.serverUrl = serverAddress.toString()
@@ -488,14 +633,48 @@ abstract class BaseInitScriptTest extends Specification {
             return this
         }
 
+        DvInjectionTestConfig withRemoteBuildCache(Boolean enabled, Boolean push = null) {
+            this.remoteBuildCacheEnabled = enabled
+            this.remoteBuildCachePush = push
+            return this
+        }
+
+        DvInjectionTestConfig withRemoteBuildCacheLocation(String server, String path = null) {
+            this.remoteBuildCacheServer = server
+            this.remoteBuildCachePath = path
+            return this
+        }
+
+        DvInjectionTestConfig withRemoteBuildCacheAllowInsecureProtocol(boolean allowInsecureProtocol) {
+            this.remoteBuildCacheAllowInsecureProtocol = allowInsecureProtocol
+            return this
+        }
+
+        DvInjectionTestConfig withRemoteBuildCacheAllowUntrustedServer() {
+            this.remoteBuildCacheAllowUntrustedServer = true
+            return this
+        }
+
+        DvInjectionTestConfig withLocalBuildCache(Boolean enabled, Boolean push = null) {
+            this.localBuildCacheEnabled = enabled
+            this.localBuildCachePush = push
+            return this
+        }
+
+        DvInjectionTestConfig withEnforceBuildCache() {
+            this.enforceBuildCache = true
+            return this
+        }
+
         Map<String, String> getEnvVars() {
             Map<String, String> envVars = [
-                DEVELOCITY_INJECTION_ENABLED               : String.valueOf(injectionEnabled),
-                DEVELOCITY_INJECTION_DEBUG                 : String.valueOf(debug),
-                DEVELOCITY_INJECTION_URL                   : serverUrl,
-                DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER: "true",
-                DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND  : String.valueOf(uploadInBackground),
-                DEVELOCITY_INJECTION_CUSTOM_VALUE          : 'gradle-actions'
+                DEVELOCITY_INJECTION_ENABLED                                   : String.valueOf(injectionEnabled),
+                DEVELOCITY_INJECTION_DEBUG                                     : String.valueOf(debug),
+                DEVELOCITY_INJECTION_URL                                       : serverUrl,
+                DEVELOCITY_INJECTION_ALLOW_UNTRUSTED_SERVER                    : "true",
+                DEVELOCITY_INJECTION_UPLOAD_IN_BACKGROUND                      : String.valueOf(uploadInBackground),
+                DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_ALLOW_INSECURE_PROTOCOL: String.valueOf(remoteBuildCacheAllowInsecureProtocol),
+                DEVELOCITY_INJECTION_CUSTOM_VALUE                              : 'gradle-actions'
             ]
             if (initScriptName) envVars.put("DEVELOCITY_INJECTION_INIT_SCRIPT_NAME", initScriptName)
             if (enforceUrl) envVars.put("DEVELOCITY_INJECTION_ENFORCE_URL", "true")
@@ -507,6 +686,14 @@ abstract class BaseInitScriptTest extends Specification {
             if (pluginRepositoryUrl != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_URL", pluginRepositoryUrl)
             if (pluginRepositoryUsername != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_USERNAME", pluginRepositoryUsername)
             if (pluginRepositoryPassword != null) envVars.put("DEVELOCITY_INJECTION_PLUGIN_REPOSITORY_PASSWORD", pluginRepositoryPassword)
+            if (enforceBuildCache) envVars.put("DEVELOCITY_INJECTION_ENFORCE_BUILD_CACHE", "true")
+            if (remoteBuildCacheEnabled != null) envVars.put("DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_ENABLED", String.valueOf(remoteBuildCacheEnabled))
+            if (remoteBuildCachePush != null) envVars.put("DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_PUSH", String.valueOf(remoteBuildCachePush))
+            if (remoteBuildCacheServer != null) envVars.put("DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_SERVER", remoteBuildCacheServer)
+            if (remoteBuildCachePath != null) envVars.put("DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_PATH", remoteBuildCachePath)
+            if (remoteBuildCacheAllowUntrustedServer) envVars.put("DEVELOCITY_INJECTION_REMOTE_BUILD_CACHE_ALLOW_UNTRUSTED_SERVER", "true")
+            if (localBuildCacheEnabled != null) envVars.put("DEVELOCITY_INJECTION_LOCAL_BUILD_CACHE_ENABLED", String.valueOf(localBuildCacheEnabled))
+            if (localBuildCachePush != null) envVars.put("DEVELOCITY_INJECTION_LOCAL_BUILD_CACHE_PUSH", String.valueOf(localBuildCachePush))
             return envVars
         }
     }
@@ -637,6 +824,13 @@ abstract class BaseInitScriptTest extends Specification {
                         }
                     """
             }
+        }
+
+        boolean isCompatibleWithBuildCacheConnector() {
+            if (pluginId == GRADLE_ENTERPRISE) {
+                return pluginVersionAtLeast('3.11')
+            }
+            return pluginId == DEVELOCITY
         }
 
         boolean isCompatibleWithCCUD() {
