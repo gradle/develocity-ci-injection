@@ -188,7 +188,9 @@ abstract class BaseInitScriptTest extends Specification {
 
         settingsFile << "rootProject.name = '${ROOT_PROJECT_NAME}'\n"
         buildFile << ''
-        gradleProperties << ''
+
+        // A TestKit daemon runs builds with many plugin versions, which outgrows Gradle's default Metaspace limit.
+        gradleProperties << "org.gradle.jvmargs=-Xmx512m -Xms256m -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError\n"
     }
 
     void declareDvPluginApplication(TestGradleVersion testGradle, TestDvPluginVersion dvPlugin, String ccudPluginVersion = null, URI serverUri = mockScansServer.address) {
