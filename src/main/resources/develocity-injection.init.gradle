@@ -593,7 +593,7 @@ static def eachDevelocityProjectExtension(def project, def dvAction, def bsActio
 static boolean hasDevelocityServer(def develocityExtension) {
     def server = develocityExtension.server
     // The Provider type cannot be referenced here because the script must still compile on Gradle 3.x
-    return server != null && (server.metaClass.respondsTo(server, 'isPresent') ? server.isPresent() : server)
+    return server && (!server.metaClass.respondsTo(server, 'isPresent') || server.isPresent())
 }
 
 /**
