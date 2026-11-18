@@ -597,8 +597,9 @@ static boolean hasDevelocityServer(def develocityExtension) {
 }
 
 /**
- * Configuring a remote build cache of the same type modifies the existing settings.
- * Switching to an HttpBuildCache type first means the next one starts from default values.
+ * Gradle has no API to reset a remote build cache or to replace it with a new one of the same type.
+ * A workaround for this is to temporarily switch to a remote build cache of a different type.
+ * Switching to an HttpBuildCache first makes the next Develocity Build Cache connector start from default values.
  */
 static void resetRemoteBuildCache(Settings settings) {
     settings.buildCache.remote(HttpBuildCache) {}
