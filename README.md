@@ -45,16 +45,16 @@ or via environment variables by replacing all hyphens (`-`) and periods (`.`) wi
 
 ### Develocity configuration
 
-| Input                                          |      Required      | Definition                                                                                                                 |
-|------------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------|
-| develocity-injection.url                       | :white_check_mark: | the URL of the Develocity server                                                                                           |
-| develocity-injection.enforce-url               |                    | enforce the configured Develocity URL over a URL configured in the project's build                                         |
-| develocity-injection.allow-untrusted-server    |                    | allow communication with an untrusted server; set to _true_ if your Develocity instance is using a self-signed certificate |
-| develocity-injection.capture-file-fingerprints |                    | enables capturing the paths and content hashes of each individual input file                                               |
-| develocity-injection.upload-in-background      |                    | set to 'false' to disable background upload of build scans                                                                 |
-| develocity-injection.custom-value              |                    | Add a Build Scan custom value to identify auto-injection builds                                                            |
-| develocity-injection.terms-of-use.url          |                    | enable publishing to scans.gradle.com                                                                                      |
-| develocity-injection.terms-of-use.agree        |                    | enable publishing to scans.gradle.com                                                                                      |
+| Input                                          |      Required      | Definition                                                                                                                                                                                                                                         |
+|------------------------------------------------|:------------------:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| develocity-injection.url                       | :white_check_mark: | the URL of the Develocity server                                                                                                                                                                                                                   |
+| develocity-injection.enforce-url               |                    | enforce the configured Develocity URL over a URL configured in the project's build; a Develocity Build Cache connector without a server defined follows the enforced URL, but a server explicitly configured in the project's build is not changed |
+| develocity-injection.allow-untrusted-server    |                    | allow communication with an untrusted server; set to _true_ if your Develocity instance is using a self-signed certificate                                                                                                                         |
+| develocity-injection.capture-file-fingerprints |                    | enables capturing the paths and content hashes of each individual input file                                                                                                                                                                       |
+| develocity-injection.upload-in-background      |                    | set to 'false' to disable background upload of build scans                                                                                                                                                                                         |
+| develocity-injection.custom-value              |                    | Add a Build Scan custom value to identify auto-injection builds                                                                                                                                                                                    |
+| develocity-injection.terms-of-use.url          |                    | enable publishing to scans.gradle.com                                                                                                                                                                                                              |
+| develocity-injection.terms-of-use.agree        |                    | enable publishing to scans.gradle.com                                                                                                                                                                                                              |
 
 ### Build cache configuration
 
