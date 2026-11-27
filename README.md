@@ -22,8 +22,8 @@ An init-script that can be used by CI integrations to inject Develocity into a G
 
 A number of input parameters can be used to control Develocity injection.
 
-These inputs can be provided via system properties (e.g., `-Ddevelocity-injection.url=https://ge.gradle.org`)
-or via environment variables by replacing all hyphens (`-`) and periods (`.`) with underscores (`_`), and capitalizing all characters (e.g., `DEVELOCITY_INJECTION_URL=https://ge.gradle.org`).
+These inputs can be provided via system properties (e.g., `-Ddevelocity-injection.url=https://develocity.gradle.org`)
+or via environment variables by replacing all hyphens (`-`) and periods (`.`) with underscores (`_`), and capitalizing all characters (e.g., `DEVELOCITY_INJECTION_URL=https://develocity.gradle.org`).
 
 ### Control parameters
 
